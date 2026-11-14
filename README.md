@@ -259,14 +259,17 @@ dsh-plugin-update-manager update dshmarket@1.73.15
 | POST | `/cancel` | `{ operationId? }` | `{ cancelled: boolean }` |
 | POST | `/config` | `{ patch }` 或全量 config | 归一化后的 `UpdaterState`（切源会自动重查） |
 | GET | `/log` | `?limit=100` | `{ entries }` |
-| POST | `/restart` | — | `{ supported: false, message }` |
+| POST | `/restart` | — | `{ supported, scheduled?, mode: 'desktop'\|'cli'\|'none', message }` |
 
-更新任务串行执行：`activeOperationId` 非空时新请求排队（`operations[].state = 'queued'`）。状态里的 `capabilities.restart` 恒为 `false`。
+更新任务串行执行：`activeOperationId` 非空时新请求排队（`operations[].state = 'queued'`）。状态里的 `capabilities` 为 `{ restart, restartMode, restartHint }`。
 
 ## 已知限制
 
 - **桌面 profile 被 Electron 独占**：官方桌面版由宿主进程内的 plugin manager 管理插件，CLI / 第三方进程直接跑 pnpm 可能被拒绝或撞上文件锁。更新前建议完全退出桌面版，或只更新非桌面 profile。
-- **没有重启 API**：宿主不提供受信的重启接口，`POST /restart` 只会返回 `supported: false`。更新成功后必须手动完全退出并重开 DSH。
+- **重启能力视宿主而定**：插件会探测当前进程。
+  - **DSH 桌面版（Electron）**：走官方 IPC（`process.send({type:'desktop-action', action:'restart'})`），等效于点设置页右上角的「重启」，会弹主进程的确认框；确认后工作环境重启、页面自动重连。
+  - **CLI 宿主（`dsh web …`）**：启动一个分离的 helper，先结束当前进程再用同样命令重新拉起，页面几秒后自动重连。
+  - **都不适用时**（无 IPC、找不到入口）：`POST /restart` 返回 `supported: false`，界面给出「完全退出 DSH 后重开」的引导。
 - **源码 tarball 不会被自动安装**：GitHub 只有 tag、没有 release 资产时，该版本只能从源码装，pnpm 12 会因默认 `allowBuilds: []` 拒绝执行 `prepare`（`ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED`）。面板会在安装前直接拒绝（`github-source-needs-build`）并提示改用 npm 源；想强装只能在完全退出 DSH 后手动 `pnpm add`，并按需在该 profile 的 `pnpm-workspace.yaml` 里加 `allowBuilds`。
 - **`@deepseek-ai/*` 只读**：宿主内置 bundle 不参与更新（状态 `builtin`）。
 - **不处理本地依赖**：`link:` / `file:` / 本地目录视为 `local`，不检查、不更新。

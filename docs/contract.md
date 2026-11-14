@@ -330,7 +330,7 @@ UpdateResult = {
 | POST | `/plugin-updater/api/cancel` | `{ operationId?: string }` | `{ cancelled: boolean }` |
 | POST | `/plugin-updater/api/config` | `{ patch: object }` 或全量 config | `UpdaterState`（切换源后自动触发重查） |
 | GET | `/plugin-updater/api/log` | `?limit=100` | `{ entries: [...] }` |
-| POST | `/plugin-updater/api/restart` | — | `{ supported: false, message: string }`（无宿主重启 API 时） |
+| POST | `/plugin-updater/api/restart` | — | `{ supported: boolean, scheduled?: boolean, mode: 'desktop'|'cli'|'service'|'none', message: string }` |
 
 `UpdaterState`：
 
@@ -366,7 +366,11 @@ UpdateResult = {
   }>,
   operations: Array<{ id, kind:'update'|'update-all'|'cancel', state:'queued'|'running'|'succeeded'|'failed'|'cancelled'|'rolled-back', name?, startedAt, endedAt?, message, result? }>,
   activeOperationId: string|null,
-  capabilities: { restart: false },
+  capabilities: {
+    restart: boolean,                  // 当前宿主能否自动重启（见 §3.8）
+    restartMode: 'desktop'|'cli'|'none',
+    restartHint: string,               // 给 UI 的一句话说明
+  },
   updatedAt: string,
 }
 ```
@@ -376,6 +380,13 @@ UpdateResult = {
   `checkOnStartup` 取值 `'force'`（默认，每次启动都强制刷新，保证重启后提示准确）或 `'throttle'`（沿用 `checkIntervalHours` 节流）。
   手动「立即检查」逻辑不变。
 - `bootId`：`GET /state` 顶层返回；client 用它区分「同一次运行内的检查结果」与「重启后的新实例」，不需要额外路由。
+
+### 3.8 重启实现
+
+- **桌面版（DSH NEXT / DSH Desktop）**：宿主是 Electron 的 Node 模式子进程，通过 `process.send({ type: 'desktop-action', action: 'restart' })` 请求主进程重启；主进程会弹确认框，确认后重启整个应用并重载页面。插件**不杀进程、不 relaunch 可执行文件**。
+- **命令行宿主（`dsh web …`）**：`/restart` 先返回响应，再由 detached helper 等待本进程退出后用同样的 `execPath + argv` 重新拉起。
+- **探测**（`lib/core/restart.js` `probeRestartPlan()`）：`ELECTRON_RUN_AS_NODE=1` 或 `DSH NEXT.exe` 且存在 IPC → desktop；否则若 `argv[1]` 存在 → cli；否则 none（UI 给退出引导）。
+- `/restart` 响应里的 `supported` 表示“已受理”：desktop 模式下确认框由桌面版主导，插件不再重复提示。
 - 节流：每个包 `cache.packages[name].fetchedAt` 在 `checkIntervalHours` 内 → 不重查，标记 `stale:true`。
 - 并发 4，总上限 30s；每个包请求 8s 超时（`config` 可覆盖）。超时的包保留上次结果 + `error.code='timeout'`。
 - `check(force:true)` 忽略节流；切换源/allowPrerelease/镜像前缀后自动 `force` 重查。
