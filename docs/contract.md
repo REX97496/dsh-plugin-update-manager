@@ -371,6 +371,7 @@ UpdateResult = {
 }
 ```
 
+- 启动诊断：`apply` 内 `setTimeout(..., 9000)` 调一次 `diagnoseStartup(...)`，结果放 `UpdaterState.diagnostics`；同时提供 `POST /diagnose`（见 §3.7）。
 - 启动检查：`apply` 内 `setTimeout(..., 6000)` 触发一次 `runCheck({ force: config.checkOnStartup === 'force', reason: 'startup' })`（不阻塞启动）。
   `checkOnStartup` 取值 `'force'`（默认，每次启动都强制刷新，保证重启后提示准确）或 `'throttle'`（沿用 `checkIntervalHours` 节流）。
   手动「立即检查」逻辑不变。
@@ -382,7 +383,67 @@ UpdateResult = {
 - 所有定时器/监听在 `ctx.effect(() => () => dispose)` 里注册，插件卸载要能停。
 - 路由注册用 `ctx.effect(() => ctx.webServer.register({ kind:'prefix', path:'/plugin-updater/api', handler }), 'plugin-updater: routes')`。
 
+### 3.7 启动诊断（`lib/core/diagnose.js` + index 集成）
+
+**目标**：每次宿主启动后，自动读取 DSH 日志，找出「插件加载失败/未激活/被版本闸跳过」的记录，归类并给出可执行修复建议；不阻塞启动，不上传任何内容。
+
+- 导出：`export async function diagnoseStartup(input) -> Diagnostics`
+  - `input = { profile, dshHome, cache, logsDir?, sinceMs?, limitFiles? }`
+  - `profile` 复用 `loadProfile()` 结果（取 `dir` 与 `dependencies`）；`cache` 为 updater 的 `cache.packages`，用于给兼容版本建议。
+  - 纯读日志文件，最多读 3 个文件、每个文件末尾 4 MB；整体耗时 < 300ms，抛错不致命（返回 `{items:[], errors:[...]}`）。
+- 日志发现：`logsDir = input.logsDir || path.join(dshHome,'logs')`；挑 `*.jsonl` 与 `desktop-next.log` 中 mtime 最新的 3 个；`sinceMs` 默认 `Date.now() - (process.uptime()*1000) - 60_000`。
+- 解析 JSONL 行：`{time,source,event,level,message}`；只关心 `level` 为 `error`/`warn` 且 `message` 命中规则的行。
+- 诊断项：
+
+```js
+Diagnostics = {
+  checkedAt: string,
+  scanned: string[],                 // 读取到的日志文件名
+  items: Array<{
+    id: string,                      // 去重键：plugin 或 '(host)'
+    plugin: string|null,             // 受影响包名（能定位到时）
+    code: string,                    // 见下表
+    severity: 'error'|'warn',
+    title: string,                   // 一句话结论（中文）
+    summary: string,                 // 1 行可读摘要（≤160 字）
+    detail: string,                  // 原始日志片段（≤2000 字，保留栈首行）
+    at: string|null,                 // 日志时间
+    fixes: Array<{
+      kind: 'update'|'command'|'text',
+      label: string,                 // 按钮/标题文案（中文）
+      version?: string,              // kind='update' 时的目标版本
+      command?: string,              // kind='command' 时给用户复制
+      cwd?: string,                  // 命令工作目录（一般是 profile.dir）
+      detail?: string,               // kind='text' 的说明或步骤
+    }>,
+  }>,
+  errors: Array<{ file: string, message: string }>,   // 读取/解析失败（可空）
+}
+```
+
+- 规则（按优先级匹配，命中即归类，同一插件同 code 只留一条、取最新时间）：
+
+| code | 触发（日志特征） | title / fixes |
+|---|---|---|
+| `incompatible` | `skipping profile bundle "<name>":` 且含 `incompatible with dsh` | 被版本闸跳过；若 `cache[name].compatibleMax` 存在且 ≠ 已装 → fix `update`(该版本)；否则 `text` 说明「等作者发布兼容版 / 换包 / allow-version 无效」 |
+| `missing-inject` | `cannot get property "..." without inject` | 插件与当前 DSH 运行时 API 不匹配；有兼容版 → `update`；否则 `text`（升级 DSH 或换包） |
+| `not-activated` | `did not activate`（HMR 汇总行，后续行含 `<name> (<id>): Error: ...`）→ 对每个子行生成一项，内层 `message` 作为 detail | 加载期抛错未激活；按内层错误再归类（无法识别则 `unknown`） |
+| `missing-dependency` | `Cannot find module` / `ERR_MODULE_NOT_FOUND` / `Failed to resolve entry` | fix `command`: `corepack pnpm install --config.strict-dep-builds=false`（cwd=profile.dir）+ `text` 说明可能是依赖未装全 |
+| `ignored-builds` | `ERR_PNPM_IGNORED_BUILDS`（宿主启动/安装日志里出现） | fix `command`: `pnpm approve-builds`（cwd=profile.dir）；`text` 提到 `pnpm-workspace.yaml` 的 `allowBuilds` 需为 true/false |
+| `broken-package` | `SyntaxError` / `Unexpected token` / `is not a function` / `ERR_PACKAGE_PATH_NOT_EXPORTED` | fix `command`: `corepack pnpm add <plugin>@<installedVersion> --save-exact --force`（能装回原版） |
+| `duplicate-registration` | `already registered` / `duplicate` / `conflict with` | `text`：两个插件注册了同一个 slot/route/section id，先停用其中一个 |
+| `unknown` | 其它 `host.kernel.<plugin>` 的 error | `text`：把 detail 反馈给插件作者；可先用 `pnpm install` 重装 |
+
+- `plugin` 推断：JSONL 的 `source` 形如 `host.kernel.<id>`（id 可能等于包名，也可能是 loader 行 id）；再用 profile `dependencies` 键与 `dsh.profile.bundles` 做匹配（先精确匹配包名，再做「loader id == package 去掉 scope」的宽松匹配）。
+- `fix.kind='update'` 的 `version` 必须同时满足：`cache[name].compatibleMax` 存在、与已装不同、且 `evaluateManifest` 判定兼容（直接复用 `pick.js` 的 `pickTargets`）。
+- index 集成：
+  - `GET /state` 顶层新增 `diagnostics: Diagnostics|null`（首轮诊断完成前为 `null`）。
+  - 新路由 `POST /plugin-updater/api/diagnose`，body `{ force?: boolean }`；`force` 忽略 60s 缓存直接重扫，返回 `Diagnostics`。
+  - 启动后 9s 自动跑一次；更新完成（单条/全部）后重置缓存，下次 `/diagnose` 重扫。
+- 所有文案中文，命令字符串必须可复制，不能包含用户机密（token 等）。
+
 ## 4. Client 契约（`lib/client.js`）
+
 
 文件必须是 loader 格式（第一行起）：
 

@@ -18,7 +18,9 @@ DSH 的插件有 `engines.dsh` / `@deepseek-ai/dsh*` peer 版本闸，直接 `pn
 > - `docs/screenshots/one-click-updated.png` — 点「一键更新」后：串行更新全部可更新插件，汇总条 + 行内「需重启生效 / 重启 DSH」
 > - `docs/screenshots/update-all-summary.png` — 「一键更新」完成后的汇总条 + 行内「需重启生效 / 重启 DSH」
 > - `docs/screenshots/restart-guide.png` — 宿主无重启接口时的退出引导
-> - `docs/screenshots/tab-in-builtin-plugins.png` — 同样的表格也注册在「设置 → 内置插件 → 插件更新」tab
+> - `docs/screenshots/tab-in-builtin-plugins.png`
+> - `docs/screenshots/diag-banner.png` — 启动诊断横幅：「启动诊断：N 个插件加载异常 / 查看分析 / 重新诊断」
+> - `docs/screenshots/diag-dialog.png` — 诊断分析弹窗：每个异常的插件、错误码、原因、可复制修复命令 — 同样的表格也注册在「设置 → 内置插件 → 插件更新」tab
 
 ## 环境要求
 
@@ -249,8 +251,9 @@ dsh-plugin-update-manager update dshmarket@1.73.15
 
 | 方法 | 路径 | body | 返回 `value` |
 |---|---|---|---|
-| GET | `/state` | — | `UpdaterState`（profile、config、rows、operations、capabilities…） |
+| GET | `/state` | — | `UpdaterState`（profile、config、rows、operations、capabilities、diagnostics…） |
 | POST | `/check` | `{ force?, names? }` | `{ started: true, ids }`，进度轮询 `/state` |
+| POST | `/diagnose` | `{ force? }` | `Diagnostics`：`{ checkedAt, scanned[], items[], errors[] }` |
 | POST | `/update` | `{ name, version }` | `{ operationId }`，立即返回 |
 | POST | `/update-all` | `{ names? }` | `{ operationId, queued }` |
 | POST | `/cancel` | `{ operationId? }` | `{ cancelled: boolean }` |
@@ -271,6 +274,37 @@ dsh-plugin-update-manager update dshmarket@1.73.15
 - **GitHub 匿名 API 限流 60 次/小时**，大量 GitHub 源插件可能触发 `rate-limit`。
 - **一次只服务一个 profile**（当前宿主 profile），不支持跨 profile 批量更新。
 - **Self-update**：理论上可以更新自己，但当前进程仍加载旧代码，更新后必须重启；更稳妥的做法是先更新其他插件。
+
+## 启动诊断
+
+插件加载失败时，DSH 往往只把原因写进日志，界面上表现成「插件没生效」。本插件会读本地启动日志，把失败归因到具体插件，并给出可执行的下一步：
+
+- 打开设置页时，若有异常，顶部显示「启动诊断：N 个插件加载异常」，点「查看分析」看条目，点「重新诊断」强制重扫。
+- 自动扫描在插件挂载后约 9 秒执行一次（此时内核已写完启动日志），结果缓存在 `GET /state` 的 `diagnostics` 字段，60 秒内复用；`POST /diagnose { force?: true }` 可立即重扫。
+
+检查范围：
+
+- 只读 `<DSH_HOME>/logs` 下最新的 **最多 3 个**日志文件（`*.jsonl` 与 `desktop-next*.log`，按修改时间倒序），每个文件只读末尾 **4 MB**；
+- 只保留 `error` / `warn` 级别的行，并优先看当前这次启动的时间窗；
+- `pending (waiting for service: …)` 这类「还在等其它服务」的行不算失败；无法归属到具体插件的宿主级报错（例如只指向 `app.asar` 的堆栈）也不会硬凑成一条。
+
+可识别的模式与给出的动作：
+
+| 日志里出现 | code | 面板给出的动作 |
+|---|---|---|
+| `skipping profile bundle "…" … is incompatible with dsh …` | `incompatible` | 版本闸跳过；若缓存知道兼容版本则提供「更新到 x.y.z」，否则只解释原因 |
+| `cannot get property "webServer" without inject` | `missing-inject` | 插件 API 与运行时不一致；提供兼容版本更新或升级 DSH 的说明 |
+| `Cannot find module` / `ERR_MODULE_NOT_FOUND` / `Failed to resolve entry` | `missing-dependency` | 给出 `corepack pnpm install …`；能解析 `imported from <path>` 时，命令的 cwd 指向插件目录，否则指向 profile 目录 |
+| `ERR_PNPM_IGNORED_BUILDS` / `Ignored build scripts` | `ignored-builds` | 提示 `pnpm approve-builds` 并说明在 `pnpm-workspace.yaml` 的 `allowBuilds` 里授权 |
+| `SyntaxError` / `Unexpected token` / `is not a function` | `broken-package` | 重装当前版本（`pnpm add <pkg>@<ver> --save-exact --force`）；`failed to import` 这类运行时错误只建议更新，不提供误导性的重装命令 |
+| `already registered` / `duplicate` / `conflict with` | `duplicate-registration` | 建议先在 `dsh.profile.bundles` 里停用其中一个再重启 |
+| 以上都不匹配、但确实来自插件内核的错误 | `unknown` | 保留原始片段，建议反馈给插件作者 |
+
+同一插件的同一类问题只保留最新一条（按日志时间），详情截断到 2000 字符并自动打码 `token=` / `api_key=` / `Bearer …` 等敏感值；`dsh-` 前缀别名（如 `ego-browser` 与 `dsh-ego-browser`）会合并成同一个插件。内置插件（`@deepseek-ai/dsh-*`）只给「内置插件」说明，不会提示用 npm 更新。
+
+隐私：诊断**只读本地日志**，不联网、不上传任何内容；面板里的「复制命令」也只复制到剪贴板。诊断不会自动改插件或配置，所有修复动作都由你确认后执行（更新走正常的原子更新流程）。
+
+探测失败（日志目录不存在、读文件出错）不会影响其它功能：`/diagnose` 仍返回 `{ checkedAt, scanned: [], items: [], errors: [...] }`，界面显示「诊断失败，请稍后重试」。
 
 ## 故障排查
 
@@ -300,7 +334,7 @@ node --check lib/client.js
 npm test
 ```
 
-`npm test` 实际执行 `node --test --experimental-test-isolation=none test/*.test.js`。测试覆盖 `semver`、`compat`、`pick`、`sources`（本地 http 桩 + fetch 桩）、`update`（临时 profile + `DSH_UPDATER_FAKE_PM` 假包管理器 + pnpm 失败分类回归）、`store`。如果运行环境的 Node 测试运行器允许创建子进程，也可以用默认隔离模式：
+`npm test` 实际执行 `node --test --experimental-test-isolation=none test/*.test.js`。测试覆盖 `semver`、`compat`、`pick`、`sources`（本地 http 桩 + fetch 桩）、`update`（临时 profile + `DSH_UPDATER_FAKE_PM` 假包管理器 + pnpm 失败分类回归）、`store`、`state`（RPC 路由与状态）和 `diagnose`（真实日志样本在 `test/fixtures/logs/`，扫描时会复制到临时目录，不读仓库文件也不联网）。如果运行环境的 Node 测试运行器允许创建子进程，也可以用默认隔离模式：
 
 ```powershell
 node --test test/*.test.js
@@ -319,9 +353,11 @@ lib/
     pick.js       # 候选选择与状态落表
     update.js     # 备份 → 安装 → 回读 → 回滚
     profile.js    # profile 与已装插件发现
+    diagnose.js   # 启动日志诊断（只读，不联网）
     http.js       # 代理感知的 HTTP 请求（可选 proxyUrl）
     store.js      # 配置 / 缓存 / 日志（唯一碰磁盘的状态模块）
 test/             # node:test 测试
+  fixtures/logs/  # 启动日志样本（真实日志摘录）
 docs/
   contract.md     # 实现契约（唯一事实来源）
   research.md     # dshmarket v1.73.6 调研
