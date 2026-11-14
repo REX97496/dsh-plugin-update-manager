@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>插件更新管理器 · 宣传片</title>
+<style>
+html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:var(--ground);color:var(--ink)}
+body{font-family:var(--text);-webkit-font-smoothing:antialiased}
+#stage{position:absolute;inset:0;overflow:hidden;background:
+  radial-gradient(130% 95% at 50% -10%, #211d2e 0%, var(--ground) 52%, var(--deep) 100%)}
+.abs{position:absolute;left:0;top:0;will-change:transform,opacity}
+#vign{position:absolute;inset:0;background:radial-gradient(80% 60% at 50% 50%, transparent 55%, rgba(0,0,0,.5) 100%)}
+
+/* opening */
+#open{left:0;right:0;top:0;height:1080px;display:flex;align-items:center;justify-content:center}
+#o1{font-family:var(--display);font-weight:var(--display-weight);font-size:108px;letter-spacing:-.02em}
+/* chips */
+#chips{left:0;top:0;width:1920px;height:1080px}
+.chip{position:absolute;width:268px;height:74px;border:1px solid var(--line);border-radius:12px;
+  background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.012));
+  padding:13px 15px 0 32px;box-sizing:border-box}
+.chip .dot{width:7px;height:7px;border-radius:2px;background:var(--mute);flex:none}
+.chip .nm{font-family:var(--mono);font-size:16px;color:var(--ink);opacity:.92;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip .vv{position:absolute;left:34px;bottom:9px;font-family:var(--mono);font-size:13px;color:var(--mute)}
+.chip .vv.warn{color:var(--accent2)}
+
+/* gate */
+#gate{left:0;right:0;top:0;height:1080px;display:flex;align-items:center;justify-content:center}
+#log{font-family:var(--mono);font-size:26px;line-height:1.85;color:var(--mute);white-space:pre;
+  border:1px solid var(--line);border-radius:14px;padding:30px 38px;background:rgba(255,255,255,.022);min-width:1180px}
+#log .l1{color:var(--ink)}
+#log .caret{display:inline-block;width:11px;height:26px;background:var(--ink);vertical-align:-4px;margin-left:2px}
+#gateNote{left:0;right:0;top:700px;text-align:center;font-size:42px;color:var(--mute);letter-spacing:.01em}
+#gateNote b{color:var(--ink);font-weight:500}
+
+#row{left:660px;top:394px;width:640px;height:110px;border:1px solid var(--line);border-radius:16px;
+  background:rgba(255,255,255,.03);box-shadow:0 30px 70px -40px rgba(0,0,0,.8)}
+#row .n{position:absolute;left:26px;top:22px;font-family:var(--mono);font-size:24px;color:var(--ink)}
+#row .v{position:absolute;left:26px;top:60px;font-family:var(--mono);font-size:18px;color:var(--mute)}
+#row .x{position:absolute;right:26px;top:37px;width:34px;height:34px;border-radius:50%;border:1px solid var(--accent2)}
+#row .x:before,#row .x:after{content:"";position:absolute;left:10px;top:16px;width:14px;height:1.5px;background:var(--accent2)}
+#row .x:before{transform:rotate(45deg)}#row .x:after{transform:rotate(-45deg)}
+
+/* title */
+#titleWrap{left:0;right:0;top:398px;text-align:center}
+#title{font-size:110px;font-weight:600;letter-spacing:-.035em;line-height:1.1}
+#title span{display:inline-block;transform-origin:50% 100%}
+#subtitle{left:0;right:0;top:572px;text-align:center;font-size:37px;color:var(--mute)}
+#subtitle b{color:var(--ink);font-weight:500}
+#hint{left:0;right:0;top:664px;text-align:center;font-family:var(--mono);font-size:21px;color:var(--mute);letter-spacing:.06em}
+
+/* product page */
+#page{left:0;top:0;width:1920px;height:1080px}
+#panel{position:absolute;left:648px;top:150px;width:624px;height:453px;overflow:hidden;border-radius:16px;
+  box-shadow:0 60px 140px -50px rgba(0,0,0,.9),0 0 0 1px rgba(255,255,255,.07);transform-origin:50% 50%}
+#panel img{position:absolute;left:0;top:0;width:624px;height:453px;display:block}
+.cal{position:absolute;font-family:var(--mono);font-size:19px;color:var(--mute);white-space:nowrap;opacity:0}
+.cal i{display:inline-block;width:24px;height:1px;background:var(--line);vertical-align:middle;margin-right:11px}
+.cal b{color:var(--ink);font-weight:400}
+
+/* badge scene */
+#bscene{left:0;top:0;width:1920px;height:1080px}
+#vold{position:absolute;left:0;right:0;top:246px;text-align:center;font-family:var(--mono);font-size:150px;letter-spacing:-.03em;line-height:1}
+#vstrike{position:absolute;height:3px;background:var(--accent2);border-radius:2px}
+#vwhy{position:absolute;left:0;right:0;top:418px;text-align:center;font-size:29px;color:var(--mute)}
+#vwhy b{color:var(--accent2);font-weight:500}
+#vnew{position:absolute;left:0;right:0;top:474px;text-align:center;font-family:var(--mono);font-size:96px;color:var(--accent);letter-spacing:-.02em;line-height:1}
+#vnewlab{position:absolute;left:0;right:0;top:598px;text-align:center;font-size:25px;color:var(--mute)}
+#btn{position:absolute;height:62px;padding:0 28px;border-radius:10px;border:1px solid var(--line);
+  background:rgba(255,255,255,.05);color:var(--ink);font-size:25px;line-height:62px;font-weight:500;white-space:nowrap}
+#prog{position:absolute;top:778px;width:280px;height:3px;background:rgba(255,255,255,.10);border-radius:2px;overflow:hidden}
+#prog i{position:absolute;left:0;top:0;height:3px;width:0;background:var(--accent)}
+#bnote{position:absolute;left:0;right:0;top:796px;text-align:center;font-family:var(--mono);font-size:21px;color:var(--mute)}
+
+/* sources */
+#srcs{left:0;right:0;top:452px;text-align:center}
+.pill{display:inline-block;margin:0 9px;padding:0 26px;height:64px;line-height:64px;border-radius:10px;border:1px solid var(--line);
+  font-family:var(--mono);font-size:23px;color:var(--mute);position:relative;background:rgba(255,255,255,.02)}
+.pill.on{color:var(--ink);border-color:rgba(255,255,255,.30);background:rgba(255,255,255,.06)}
+.pill .tick{position:absolute;right:-7px;top:-7px;width:19px;height:19px;border-radius:50%;background:var(--accent);opacity:0}
+#srcNote{left:0;right:0;top:576px;text-align:center;font-size:35px;color:var(--mute)}
+#srcNote b{color:var(--ink);font-weight:500}
+
+/* rollback */
+#rb{left:0;right:0;top:348px;text-align:center}
+#rbCard{display:inline-block;text-align:left;font-family:var(--mono);font-size:27px;color:var(--mute);
+  border:1px solid var(--line);border-radius:14px;padding:26px 38px;background:rgba(255,255,255,.02);line-height:1.85}
+#rbCard b{color:var(--ink);font-weight:400}
+#rbCard del{color:var(--accent2);text-decoration-color:var(--accent2)}
+#rbNote{left:0;right:0;top:606px;text-align:center;font-size:37px;color:var(--mute)}
+#rbNote b{color:var(--ink);font-weight:500}
+
+/* toast + dialog */
+#toastWrap{left:0;top:0;width:1920px;height:1080px}
+#toastimg{position:absolute;left:1467px;top:920px;width:413px;height:120px;border-radius:14px;
+  box-shadow:0 24px 60px -20px rgba(0,0,0,.9),0 0 0 1px rgba(255,255,255,.06)}
+#toastNote{position:absolute;left:0;right:0;top:412px;text-align:center;font-size:40px;color:var(--mute)}
+#toastNote b{color:var(--ink);font-weight:500}
+#toastHint{position:absolute;left:0;right:0;top:486px;text-align:center;font-family:var(--mono);font-size:21px;color:var(--mute)}
+#mask{position:absolute;left:0;top:0;width:1920px;height:1080px;background:rgba(0,0,0,.55);opacity:0}
+#dlg{position:absolute;left:410px;top:266px;width:1100px;height:547px;border-radius:18px;opacity:0;
+  box-shadow:0 60px 150px -40px rgba(0,0,0,.95),0 0 0 1px rgba(255,255,255,.08)}
+
+/* principles + close */
+#pr{left:0;right:0;top:0;height:1080px}
+.pr{position:absolute;left:0;right:0;text-align:center;font-size:52px;color:var(--mute)}
+.pr b{color:var(--ink);font-weight:500}
+#final{left:0;right:0;top:438px;text-align:center;font-size:84px;line-height:1.24;letter-spacing:-.025em}
+#final b{color:var(--ink);font-weight:600}
+#end{position:absolute;inset:0;background:var(--deep);opacity:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+#endName{font-family:var(--display);font-size:86px;font-weight:600;letter-spacing:-.02em;color:var(--ink)}
+#endLine{margin-top:20px;font-size:25px;color:var(--mute)}
+#endCredit{margin-top:62px;font-family:var(--mono);font-size:17px;color:var(--mute);line-height:1.9;text-align:center;opacity:.82}
+#black{position:absolute;inset:0;background:#000;opacity:0}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="open" class="abs"><div id="o1">插件，越装越多。</div></div>
+  <div id="chips" class="abs"></div>
+
+  <div id="gate" class="abs"><div id="log"></div></div>
+  <div id="gateNote" class="abs"></div>
+  <div id="row" class="abs"><div class="n">dsh-skills-manager</div><div class="v">0.2.0 · peer 还停在 0.1.x</div><div class="x"></div></div>
+
+  <div id="titleWrap" class="abs"><div id="title"></div></div>
+  <div id="subtitle" class="abs">它只做一件事：<b>看清版本，安全地更新。</b></div>
+  <div id="hint" class="abs">不自动更新 · 不碰插件内部 · 状态只在本地</div>
+
+  <div id="page" class="abs">
+    <div id="panel"><img id="panelImg" src="../assets/table.png" alt=""></div>
+    <div class="cal" id="c1"></div>
+    <div class="cal" id="c2"></div>
+    <div class="cal" id="c3"></div>
+  </div>
+
+  <div id="bscene" class="abs">
+    <div id="vold">0.30.1</div>
+    <div id="vstrike"></div>
+    <div id="vwhy">最新版要求更高的内核 · <b>本机 0.2.1-rc.4 装不上</b></div>
+    <div id="vnew">0.26.1</div>
+    <div id="vnewlab">与本机 DSH 兼容的最高版本</div>
+    <div id="btn">更新到兼容版 0.26.1</div>
+    <div id="prog"><i></i></div>
+    <div id="bnote"></div>
+  </div>
+
+  <div id="srcs" class="abs"></div>
+  <div id="srcNote" class="abs">四个来源，随时切换。<b>换源之后，候选版本立刻重算。</b></div>
+
+  <div id="rb" class="abs"><div id="rbCard"><div>dependencies</div><div>  "dshmarket": <del>"1.73.15"</del></div><div>  … 其余 26 项 <b>原样保留</b></div></div></div>
+  <div id="rbNote" class="abs">装不上，就<b>原样还你</b>。备份、校验、回滚。</div>
+
+  <div id="toastWrap" class="abs">
+    <div id="toastNote">重启之后，<b>右下角会告诉你。</b></div>
+    <div id="toastHint">哪个插件，从哪个版本到哪个版本</div>
+    <img id="toastimg" src="../assets/toast.png" alt="">
+    <div id="mask"></div>
+    <img id="dlg" src="../assets/dialog.png" alt="">
+  </div>
+
+  <div id="pr" class="abs"></div>
+  <div id="final" class="abs">更新这件事，<b>本该这么简单。</b></div>
+
+  <div id="end">
+    <div id="endName">插件更新管理器</div>
+    <div id="endLine">dsh-plugin-update-manager · 一个很小的 DSH 插件</div>
+    <div id="endCredit">音乐 “Voxel Revolution” — Kevin MacLeod (incompetech.com)<br>CC BY 4.0 · 本片只用了这一首现成音乐</div>
+  </div>
+  <div id="vign"></div>
+  <div id="black"></div>
+</div>
+
+<div id="glyphs" hidden></div>
+
+<script src="motion.js"></script>
+<script src="look.js"></script>
+<script>
+(function(){
+'use strict';
+var OM = window.OM;
+var B = 60/122;                 // one beat at 122 BPM
+var DUR = 124.0;
+function Q(sec){ return Math.round(sec/B)*B; }   // snap a time to the beat grid
+function $(id){ return document.getElementById(id); }
+
+/* ── cast ─────────────────────────────────────────────── */
+var NAMES = ['dsh-better-sidebar','@dsh-eda/bridge','dsh-univer-office','dsh-linkswift',
+  'dsh-memewiki','@xmanrui/dsh-im','dsh-context','dshmarket',
+  'dsh-bili-scroll','billion-context','minecraft-dev','dsh-vk1-balance-widget',
+  'dsh-plugin-jarvis','dynamic-thinking-chain','@local/dsh-unity-bridge','dsh-skills-manager'];
+var VERS = ['0.28.2','0.3.1','0.3.0','2.4.0','0.1.4','5.9.0','0.82.1','1.73.6',
+  '2.5.0','0.1.213','0.13.2','0.2.3','0.6.0','0.2.2','0.1.0','0.2.0'];
+var WARN = [false,false,false,false,false,false,false,false,true,true,true,false,false,false,false,true];
+var chips = [];
+(function(){
+  var host = $('chips');
+  for (var i=0;i<NAMES.length;i++){
+    var c = document.createElement('div'); c.className = 'chip';
+    var col = i % 4, row = (i>>2);
+    var x = 358 + col*312, y = 262 + row*134;
+    c.style.left = x+'px'; c.style.top = y+'px'; c.style.opacity = 0;
+    c.innerHTML = '<span class="dot"></span><span class="nm">'+NAMES[i]+'</span>'+
+      '<span class="vv'+(WARN[i]?' warn':'')+'">'+VERS[i]+'</span>';
+    host.appendChild(c);
+    chips.push({el:c, i:i, x:x, y:y});
+  }
+})();
+
+(function(){
+  var t = $('title'), s = '插件更新管理器';
+  for (var i=0;i<s.length;i++){ var sp=document.createElement('span'); sp.textContent=s[i]; t.appendChild(sp); }
+})();
+
+var PRINCIPLES = [
+  ['它<b>不</b>自动更新。','每一次都要你点头。'],
+  ['它<b>不</b>改插件内部。','只动安装清单和依赖。'],
+  ['它<b>不</b>上传任何东西。','状态只在你自己的磁盘上。']
+];
+(function(){
+  var host = $('pr');
+  for (var i=0;i<3;i++){
+    var d = document.createElement('div'); d.className='pr';
+    d.style.top = (330 + i*152)+'px'; d.style.opacity = 0;
+    d.innerHTML = PRINCIPLES[i][0] + ' <span style="opacity:.72">'+PRINCIPLES[i][1]+'</span>';
+    host.appendChild(d);
+  }
+})();
+var SRCS = ['npm 官方','npm 国内镜像','GitHub 发布','GitHub 国内镜像'];
+(function(){
+  var host = $('srcs');
+  for (var i=0;i<SRCS.length;i++){
+    var p = document.createElement('span'); p.className='pill';
+    p.innerHTML = SRCS[i] + '<span class="tick"></span>';
+    p.style.opacity = 0; host.appendChild(p);
+  }
+})();
+
+var LOG1 = 'skipping profile bundle "dsh-skills-manager":';
+var LOG2 = '  @deepseek-ai/dsh ^0.1.3-alpha.2  is incompatible with  dsh 0.2.1-rc.4';
+
+/* ── envelopes ────────────────────────────────────────── */
+function env(t, t0, t1, fin, fout){
+  if (t < t0 || t > t1) return 0;
+  var a = fin ? OM.ease.expoOut(OM.seg(t, t0, t0+fin)) : 1;
+  var z = fout ? 1 - OM.ease.smoother(OM.seg(t, t1-fout, t1)) : 1;
+  return Math.min(a, z);
+}
+
+/* ── the frame, as a pure function of t ───────────────── */
+function seek(t){
+  var dr = $('stage');
+  dr.style.transform = 'translate(' + (5*Math.sin(t*0.17)) + 'px,' + (4*Math.sin(t*0.273+1.1)) + 'px)';
+
+  /* 1 · opening line */
+  var collapseAll = OM.ease.smoother(OM.seg(t, Q(12.5), Q(13.5)));
+  var e1 = env(t, 0.05, Q(13.4), 1.0, 0.6) * (1 - collapseAll);
+  var k0 = OM.spring(t - 0.10, 0.62, 20);
+  var capK = OM.ease.cubicInOut(OM.seg(t, 5.5, 6.8));
+  var o1 = $('o1');
+  o1.style.opacity = e1 * OM.clamp(k0*1.5,0,1);
+  o1.style.transform = 'translateY(' + ((1-k0)*54 - capK*286) + 'px) scale(' + ((0.97+0.03*k0) * (1 - 0.52*capK)) + ')';
+  o1.style.filter = 'blur(' + ((1-e1)*7) + 'px)';
+  o1.style.transformOrigin = '50% 0%';
+
+  /* 2 · sixteen plugins land, then their versions disagree */
+  for (var i=0;i<chips.length;i++){
+    var c = chips[i];
+    var t0 = Q(5.35) + i*0.105;
+    var k = OM.spring(t - t0, 0.66, 20);
+    var collapse = OM.ease.smoother(OM.seg(t, Q(12.5), Q(13.5)));
+    c.el.style.opacity = OM.clamp(k*1.6,0,1) * (1 - collapse);
+    var cx = 960 - (c.x + 116 - 960)*0.42, cy = 540 - (c.y + 35 - 540)*0.42;
+    c.el.style.transform = 'translate(' + ((cx - c.x)*collapse) + 'px,' + ((cy - c.y)*collapse + (1-k)*42) + 'px) '
+      + 'scale(' + ((0.92 + 0.08*k) * (1 - 0.42*collapse)) + ')';
+    c.el.style.filter = 'blur(' + (collapse*7) + 'px)';
+  }
+
+  /* 3 · the gate: a log nobody reads, a plugin nobody sees */
+  var gl = env(t, Q(12.9), Q(21.2), 0.5, 0.8);
+  var lg = $('log');
+  lg.style.opacity = gl;
+  if (gl > 0.001){
+    var ty1 = OM.typeOn(t, Q(14.3), LOG1, {cps:34});
+    var ty2 = OM.typeOn(t, Q(17.1), LOG2, {cps:52});
+    var blink = (Math.floor(t*2.2)%2===0) ? 1 : 0;
+    lg.innerHTML = '<span class="l1">'+ty1.str+'</span>' + (ty1.done?'':'<span class="caret"></span>') +
+      '\n' + ty2.str + (ty2.done && t < Q(20.4) ? '<span class="caret" style="opacity:'+blink+'"></span>' : '');
+    var lgk = OM.spring(t - Q(12.9), 0.7, 16);
+    lg.style.transform = 'translateY(' + ((1-OM.ease.expoOut(OM.seg(t,Q(12.9),Q(14.2))))*24) + 'px) scale(' + (0.55 + 0.45*lgk) + ')';
+  }
+  var rw = env(t, Q(18.7), Q(22.4), 0.55, 0.7);
+  var row = $('row');
+  row.style.opacity = rw;
+  var rk = OM.spring(t - Q(18.7), 0.62, 18);
+  row.style.transform = 'translateY(' + ((1-rk)*30) + 'px) scale(' + (0.96+0.04*rk) + ')';
+  row.style.filter = 'blur(' + ((1-rw)*8) + 'px)';
+  var gn = env(t, Q(21.4), Q(23.1), 0.5, 0.6);
+  $('gateNote').style.opacity = gn;
+  $('gateNote').innerHTML = '提示是没有的。<b>它只是不加载。</b>';
+  $('gateNote').style.transform = 'translateY(' + ((1-OM.ease.expoOut(OM.seg(t,Q(21.4),Q(22.2))))*22) + 'px)';
+
+  /* 4 · the name */
+  var tt = env(t, Q(24.9), Q(33.2), 0.7, 0.9);
+  var spans = $('title').childNodes;
+  for (var j=0;j<spans.length;j++){
+    var w = OM.wordRise(t, Q(25.2) + j*0.075, {dist:60, s0:0.9, omega:20});
+    spans[j].style.opacity = tt * w.op;
+    spans[j].style.transform = 'translateY(' + w.y + 'px) scale(' + w.s + ')';
+  }
+  var sb = env(t, Q(29.6), Q(33.2), 0.6, 0.7);
+  $('subtitle').style.opacity = sb;
+  $('subtitle').style.transform = 'translateY(' + ((1-OM.ease.expoOut(OM.seg(t,Q(29.6),Q(30.6))))*24) + 'px)';
+  $('hint').style.opacity = env(t, Q(31.6), Q(33.2), 0.6, 0.6) * 0.92;
+
+  /* 5 · the page, camera pushes into the list */
+  var pg = env(t, Q(34.4), Q(52.4), 0.9, 0.9);
+  var pgLate = env(t, Q(52.0), Q(56.6), 0.9, 1.1);
+  var pgAll = Math.max(pg, t > Q(52.0) ? pgLate : 0);
+  var panel = $('panel');
+  var lateK = OM.ease.cubicInOut(OM.seg(t, Q(52.4), Q(54.8)));
+  panel.style.opacity = pgAll * (1 - 0.76*lateK);
+  panel.style.filter = 'blur(' + (t > Q(52.0) ? 3.5*OM.ease.smoother(OM.seg(t,Q(52.4),Q(54.4))) : 0) + 'px) brightness(' + (t > Q(52.0) ? (1-0.35*OM.ease.smoother(OM.seg(t,Q(52.4),Q(54.4)))) : 1) + ')';
+  var pk = OM.spring(t - Q(34.4), 0.72, 15);
+  var zoom = OM.ease.cubicInOut(OM.seg(t, Q(35.4), Q(50.6)));
+  panel.style.transform = 'translateY(' + ((1-pk)*36 - zoom*20 + lateK*210) + 'px) scale(' + ((0.94 + 0.06*pk) * (1 + zoom*0.10) * (1 - 0.22*lateK)) + ')';
+  $('panelImg').style.transform = 'scale(' + (1 + zoom*0.10) + ')';
+  var cals = [['c1', Q(38.4)], ['c2', Q(41.4)], ['c3', Q(44.5)]];
+  var calPos = [[1302,396],[1302,468],[1302,516]];
+  var calTxt = ['<i></i><b>内置</b> · 只看版本，不更新',
+                 '<i></i><b>有兼容更新</b> · 默认选中 0.26.1',
+                 '<i></i><b>本地插件</b> · 跳过检查'];
+  for (var ci=0;ci<3;ci++){
+    var el = $(cals[ci][0]);
+    var kc = OM.ease.expoOut(OM.seg(t, cals[ci][1], cals[ci][1]+0.55));
+    var alive = (t > cals[ci][1] && t < Q(52.2)) ? 1 : 0;
+    el.style.opacity = alive * kc * pg;
+    el.innerHTML = calTxt[ci];
+    el.style.left = calPos[ci][0]+'px'; el.style.top = calPos[ci][1]+'px';
+    el.style.transform = 'translateX(' + ((1-kc)*16) + 'px)';
+  }
+
+  /* 6 · latest is incompatible → the compatible version */
+  var e6 = env(t, Q(53.0), Q(69.4), 0.8, 0.9);
+  var oldIn = OM.ease.expoOut(OM.seg(t, Q(53.2), Q(53.9)));
+  var strike = OM.ease.expoOut(OM.seg(t, Q(57.0), Q(57.8)));
+  var oldOut = OM.ease.smoother(OM.seg(t, Q(60.2), Q(62.4)));
+  $('vold').style.opacity = e6 * oldIn * (1-oldOut*0.86);
+  $('vold').style.transform = 'translateY(' + ((1-oldIn)*46) + 'px)';
+  var vw = 470;
+  $('vstrike').style.left = (960 - vw/2) + 'px';
+  $('vstrike').style.top = '324px';
+  $('vstrike').style.width = (strike*vw) + 'px';
+  $('vstrike').style.opacity = (strike>0 && t < Q(61.2)) ? e6 : 0;
+  $('vwhy').style.opacity = env(t, Q(57.2), Q(61.6), 0.5, 0.6) * e6;
+  var nk = OM.spring(t - Q(61.0), 0.6, 17);
+  $('vnew').style.opacity = e6 * OM.clamp(nk*1.5,0,1);
+  $('vnew').style.transform = 'translateY(' + ((1-nk)*44) + 'px)';
+  $('vnewlab').style.opacity = env(t, Q(62.2), Q(66.4), 0.5, 0.5) * e6;
+  var btn = $('btn');
+  var bk = OM.spring(t - Q(63.6), 0.66, 18);
+  var bshow = env(t, Q(63.6), Q(68.0), 0.05, 0.5);
+  btn.style.opacity = OM.clamp(bk*1.4,0,1) * (bshow>0?1:0);
+  btn.style.left = (960 - btn.offsetWidth/2) + 'px';
+  btn.style.top = '690px';
+  var prs = OM.press(t, Q(65.0), {depth:0.05, decay:12, omega:30});
+  btn.style.transform = 'scale(' + prs.s + ')';
+  btn.style.background = prs.active ? 'rgba(124,108,255,.28)' : 'rgba(255,255,255,.05)';
+  var prog = OM.ease.smoother(OM.seg(t, Q(65.4), Q(67.2)));
+  $('prog').style.opacity = (t > Q(65.2) && t < Q(68.6)) ? e6 : 0;
+  $('prog').style.left = (960-140) + 'px';
+  $('prog').firstChild.style.width = (prog*280)+'px';
+  $('bnote').style.opacity = env(t, Q(67.6), Q(69.2), 0.5, 0.6) * e6;
+  $('bnote').textContent = '0.26.1 · 已写入安装清单 · 需重启生效';
+
+  /* 7 · four sources */
+  var e7 = env(t, Q(69.8), Q(76.4), 0.3, 1.1);
+  var srcs = $('srcs').children;
+  for (var s2=0;s2<srcs.length;s2++){
+    var ks = OM.spring(t - (Q(70.2) + s2*0.20), 0.66, 20);
+    srcs[s2].style.opacity = e7 * OM.clamp(ks*1.5,0,1);
+    srcs[s2].style.transform = 'translateY(' + ((1-ks)*28) + 'px)';
+    var onAt = Q(71.6) + s2*1.35;
+    var isOn = t > onAt && t < Q(75.0);
+    srcs[s2].className = 'pill' + (isOn ? ' on' : '');
+    srcs[s2].lastChild.style.opacity = isOn ? OM.clamp(OM.spring(t-onAt,0.55,26)*1.5,0,1) : 0;
+  }
+  $('srcNote').style.opacity = env(t, Q(72.6), Q(75.4), 0.5, 0.6);
+
+  /* 8 · rollback */
+  var e8 = env(t, Q(76.2), Q(81.6), 0.6, 0.8);
+  var rbk = OM.spring(t - Q(76.2), 0.7, 15);
+  $('rbCard').style.opacity = e8 * OM.clamp(rbk*1.4,0,1);
+  $('rbCard').style.transform = 'translateY(' + ((1-rbk)*34) + 'px)';
+  $('rbNote').style.opacity = env(t, Q(78.2), Q(81.4), 0.5, 0.6);
+
+  /* 9 · the toast appears after a restart, then opens */
+  var e9 = env(t, Q(84.2), Q(91.6), 0.2, 0.8);
+  var rbOut = OM.ease.smoother(OM.seg(t, Q(83.0), Q(84.6)));
+  if (rbOut > 0){ var rbc = $('rbCard'); rbc.style.transform = 'translate(' + (rbOut*54) + 'px,' + (rbOut*38) + 'px) scale(' + (1-0.05*rbOut) + ')'; rbc.style.opacity = Math.max(e8, 1) * (1-rbOut); }
+  $('toastNote').style.opacity = env(t, Q(84.4), Q(87.8), 0.6, 0.6);
+  $('toastHint').style.opacity = env(t, Q(85.4), Q(87.6), 0.6, 0.6);
+  var tk = OM.spring(t - Q(84.6), 0.7, 14);
+  $('toastimg').style.opacity = e9 * OM.clamp(tk*1.4,0,1) * (1-OM.ease.smoother(OM.seg(t,Q(88.6),Q(89.8))));
+  $('toastimg').style.transform = 'translate(' + ((1-tk)*140) + 'px,' + ((1-tk)*12) + 'px) scale(' + (0.95+0.05*tk) + ')';
+  $('mask').style.opacity = env(t, Q(87.4), Q(91.4), 0.7, 0.9);
+  var dk = OM.spring(t - Q(87.8), 0.72, 15);
+  $('dlg').style.opacity = e9 * OM.clamp(dk*1.4,0,1);
+  $('dlg').style.transform = 'scale(' + (0.90 + 0.10*dk) + ')';
+  $('dlg').style.transformOrigin = '100% 100%';
+
+  /* 10 · what it refuses to do */
+  var prsEls = $('pr').children;
+  for (var p2=0;p2<prsEls.length;p2++){
+    var t0p = Q(96.4) + p2*1.9;
+    var kp = OM.ease.expoOut(OM.seg(t, t0p, t0p+0.55));
+    var outP = OM.ease.smoother(OM.seg(t, Q(102.6), Q(104.2)));
+    prsEls[p2].style.opacity = kp*(1-outP);
+    prsEls[p2].style.transform = 'translateY(' + ((1-kp)*28) + 'px)';
+  }
+
+  /* 11 · the one line + the end card */
+  var fin = env(t, Q(106.6), Q(115.2), 0.8, 1.6);
+  $('final').style.opacity = fin;
+  $('final').style.transform = 'translateY(' + ((1-OM.ease.expoOut(OM.seg(t,Q(106.6),Q(107.6))))*30) + 'px)';
+  $('end').style.opacity = env(t, Q(113.8), 999, 1.4, 0);
+  $('end').style.zIndex = 6;
+  $('black').style.opacity = OM.ease.smoother(OM.seg(t, Q(120.6), Q(123.0)));
+}
+window.__seek = seek;
+window.__dur = DUR;
+window.__meta = { fps: 30, dur: DUR, cuts: [0.4, 5.5, 12.8, 17.2, 21.4, 22.8, 24.9, 33.7, 34.4, 52.8, 61.0, 69.8, 76.0, 81.3, 81.9, 84.4, 88.2, 91.1, 96.4, 103.8, 106.9, 113.8, 120.6] };
+
+window.__ready = (window.LOOK && window.LOOK.ready ? window.LOOK.ready : Promise.resolve()).then(function(){
+  seek(0);
+});
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+node_modules/
+_recon/
+dist/
+promo/out/
+promo/tmp/
+promo/stills/
+promo/bin/
+promo/music/*.mp3
+promo/music/*.wav
+promo/*.wav
+promo/comp/look*.js
+promo/comp/*.ttf
+promo/comp/msyh*.ttf
+*.log
+.DS_Store

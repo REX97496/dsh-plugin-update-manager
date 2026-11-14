@@ -1,0 +1,14 @@
+# dsh-plugin-update-manager bundle patch
+#
+# This file is the `dsh.bundle.patch` layer of the npm package: when the plugin
+# is installed through the loader (or `dsh plugin add`), the bundle channel
+# appends `dsh-plugin-update-manager` to `dsh.profile.bundles` and this patch
+# inserts the loader row. The host half then mounts `/plugin-updater/api/*`
+# routes, and the client half registers the Settings sections.
+#
+# Manual mount (older profiles): add the same row to the profile's own
+# cordis.patch.yml. Do not mount twice — two host halves would both try to
+# register the same route prefix and fail the whole plugin tree at boot.
+- insert:
+    - id: plugin-updater
+      name: 'dsh-plugin-update-manager'

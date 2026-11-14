@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>插件更新管理器 · 宣传片 v2</title>
+<style>
+html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:var(--ground);color:var(--ink)}
+body{font-family:var(--text);-webkit-font-smoothing:antialiased}
+#stage{position:absolute;inset:0;overflow:hidden;background:
+  radial-gradient(130% 95% at 50% -10%, #211d2e 0%, var(--ground) 52%, var(--deep) 100%)}
+.abs{position:absolute;left:0;top:0;will-change:transform,opacity}
+#vign{position:absolute;inset:0;background:radial-gradient(80% 60% at 50% 50%, transparent 55%, rgba(0,0,0,.5) 100%)}
+
+/* 1 · opening */
+#open{left:240px;right:0;top:0;height:1080px;display:flex;align-items:center;justify-content:flex-start}
+#o1{font-family:var(--display);font-weight:var(--display-weight);font-size:120px;letter-spacing:-.02em;transform-origin:50% 50%}
+
+/* 2 · chips */
+#chips{left:0;top:0;width:1920px;height:1080px}
+.chip{position:absolute;width:330px;height:84px;border:1px solid var(--line);border-radius:14px;
+  background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.012));
+  padding:14px 16px 0 34px;box-sizing:border-box}
+.chip .dot{position:absolute;left:15px;top:18px;width:8px;height:8px;border-radius:2px;background:var(--mute)}
+.chip .nm{font-family:var(--mono);font-size:18px;color:var(--ink);opacity:.92;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip .vv{position:absolute;left:34px;bottom:10px;font-family:var(--mono);font-size:14px;color:var(--mute)}
+.chip .vv.warn{color:var(--accent2)}
+
+/* 3 · gate */
+#gate{left:0;right:0;top:0;height:1080px;display:flex;align-items:center;justify-content:center}
+#log{font-family:var(--mono);font-size:28px;line-height:1.9;color:var(--mute);white-space:pre;
+  border:1px solid var(--line);border-radius:16px;padding:34px 42px;background:rgba(255,255,255,.024);min-width:1440px;box-sizing:border-box}
+#log .l1{color:var(--ink)}
+#log .caret{display:inline-block;width:12px;height:28px;background:var(--ink);vertical-align:-5px;margin-left:2px}
+#gateNote{left:0;right:0;top:742px;text-align:center;font-size:50px;color:var(--mute);letter-spacing:.01em}
+#gateNote b{color:var(--ink);font-weight:500}
+#row{left:360px;top:300px;width:1200px;height:128px;border:1px solid var(--line);border-radius:18px;
+  background:rgba(255,255,255,.03);box-shadow:0 34px 80px -46px rgba(0,0,0,.85);display:none}
+#row .n{position:absolute;left:34px;top:28px;font-family:var(--mono);font-size:28px;color:var(--ink)}
+#row .v{position:absolute;left:34px;top:72px;font-family:var(--mono);font-size:20px;color:var(--mute)}
+#row .x{position:absolute;right:36px;top:44px;width:40px;height:40px;border-radius:50%;border:1px solid var(--accent2)}
+#row .x:after{content:'';position:absolute;left:19px;top:9px;width:1px;height:22px;background:var(--accent2)}
+
+/* 4 · title */
+#titleWrap{left:240px;top:0;width:1680px;height:1080px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center}
+#title{font-family:var(--display);font-weight:var(--display-weight);font-size:136px;letter-spacing:-.03em;white-space:nowrap}
+#title span{display:inline-block;will-change:transform,opacity}
+#subtitle{margin-top:30px;font-size:46px;color:var(--mute);letter-spacing:.01em}
+#hint{margin-top:28px;font-family:var(--mono);font-size:22px;color:var(--mute);opacity:.9;letter-spacing:.02em}
+
+/* 5 · the plugin manager, drawn from nothing */
+#panel{left:220px;top:100px;width:1480px;height:880px;transform-origin:0 0}
+.edge{position:absolute;background:var(--line)}
+.e-top{left:0;top:0;height:1px;width:100%;transform-origin:0 0}
+.e-bottom{left:0;bottom:0;height:1px;width:100%;transform-origin:100% 0}
+.e-left{left:0;top:0;width:1px;height:100%;transform-origin:0 0}
+.e-right{right:0;top:0;width:1px;height:100%;transform-origin:0 100%}
+.pbody{position:absolute;inset:0;padding:56px 60px;box-sizing:border-box}
+.ptitle{font-family:var(--display);font-weight:600;font-size:44px;letter-spacing:-.02em}
+.psub{margin-top:14px;font-size:23px;color:var(--mute);line-height:1.5;max-width:1080px}
+.ptool{position:absolute;left:60px;right:60px;top:200px;display:flex;align-items:center;gap:18px}
+.tlbl{font-size:22px;color:var(--mute)}
+.tsel{display:inline-flex;align-items:center;gap:10px;height:46px;padding:0 16px;border:1px solid var(--line);
+  border-radius:10px;font-size:22px;color:var(--ink);background:rgba(255,255,255,.03)}
+.tsel i{width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid var(--mute)}
+.tbtn{display:inline-flex;align-items:center;height:46px;padding:0 20px;border:1px solid var(--line);border-radius:10px;
+  font-size:22px;color:var(--ink);background:rgba(255,255,255,.03);position:relative;overflow:hidden}
+.tbtn.primary{border-color:rgba(239,236,230,.55);background:rgba(255,255,255,.9);color:#14121a;font-weight:500}
+.tlast{margin-left:auto;font-size:20px;color:var(--mute);font-family:var(--mono)}
+.thead{position:absolute;left:60px;right:60px;top:296px;display:flex;padding:0 6px 12px;border-bottom:1px solid var(--line);
+  font-size:20px;color:var(--mute);font-family:var(--mono)}
+.thead .c1{flex:1}.thead .c2{width:210px}.thead .c3{width:200px}.thead .c4{width:280px;text-align:right}
+.prow{position:absolute;left:60px;right:60px;height:82px;display:flex;align-items:center;padding:0 6px;
+  border-bottom:1px solid rgba(255,255,255,.055);font-size:24px;box-sizing:border-box}
+.prow .c1{flex:1;display:flex;align-items:center;gap:12px;min-width:0}
+.prow .nm{font-family:var(--mono);font-size:24px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prow .kd{font-size:20px;color:var(--mute);white-space:nowrap}
+.prow .c2{width:210px;font-family:var(--mono);font-size:22px;color:var(--mute)}
+.prow .c3{width:200px}
+.prow .c4{width:280px;display:flex;justify-content:flex-end}
+.tag{display:inline-flex;align-items:center;height:36px;padding:0 14px;border-radius:8px;background:rgba(255,255,255,.06);
+  font-size:19px;color:var(--ink)}
+.tag.warn{background:rgba(244,198,79,.14);color:var(--accent2)}
+.tag.ok{background:rgba(124,108,255,.16);color:#b9afff}
+.abtn{display:inline-flex;align-items:center;height:40px;padding:0 16px;border:1px solid var(--line);border-radius:9px;
+  font-size:20px;color:var(--ink);background:rgba(255,255,255,.03)}
+.abtn.hot{border-color:rgba(124,108,255,.6);background:rgba(124,108,255,.16);color:#cfc8ff}
+.pfoot{position:absolute;left:60px;bottom:44px;font-family:var(--mono);font-size:19px;color:var(--mute)}
+#focusShade{position:absolute;left:0;top:0;width:100%;height:100%;opacity:0;background:linear-gradient(90deg,rgba(13,12,16,1) 0%,rgba(13,12,16,.99) 17%,rgba(13,12,16,.86) 24%,rgba(13,12,16,0) 33%)}
+#focusName{position:absolute;left:64px;top:196px;font-family:var(--mono);font-size:24px;color:var(--ink);opacity:0}
+#focusVer{position:absolute;left:66px;top:238px;font-family:var(--mono);font-size:19px;color:var(--mute);opacity:0}
+.scan{position:absolute;left:0;top:0;height:100%;width:36%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.10),transparent)}
+.miss{font-size:20px;color:var(--accent2);white-space:nowrap}
+/* right-side annotation while focused */
+#focusWrap{left:0;top:0;width:1920px;height:1080px;pointer-events:none}
+#vbig{position:absolute;left:1010px;top:300px;font-family:var(--mono);font-size:132px;color:rgba(239,236,230,.62)}
+#vstrike{position:absolute;left:1002px;top:388px;height:5px;background:var(--accent2);width:0}
+#vwhy{position:absolute;left:1012px;top:492px;font-size:27px;color:var(--mute);line-height:1.7}
+#vwhy b{color:var(--accent2);font-weight:500}
+#vnew{position:absolute;left:1012px;top:600px;font-family:var(--mono);font-size:92px;color:var(--accent)}
+#vnewlab{position:absolute;left:1014px;top:720px;font-size:26px;color:var(--mute)}
+#cursor{position:absolute;left:0;top:0;width:34px;height:34px;pointer-events:none}
+#cursor svg{display:block;filter:drop-shadow(0 4px 10px rgba(0,0,0,.55))}
+#tap{position:absolute;width:70px;height:70px;border:1px solid rgba(239,236,230,.7);border-radius:50%;opacity:0}
+#done{position:absolute;left:0;top:0;display:inline-flex;align-items:center;gap:14px;height:64px;padding:0 24px;
+  border:1px solid rgba(124,108,255,.55);border-radius:12px;background:rgba(124,108,255,.14);font-size:26px;color:#ded9ff}
+
+/* 6 · sources */
+#srcWrap{left:0;top:0;width:1920px;height:1080px}
+#srcHead{position:absolute;left:170px;top:286px;font-size:52px;color:var(--ink);letter-spacing:-.01em}
+#srcSub{position:absolute;left:172px;top:366px;font-size:26px;color:var(--mute)}
+#srcs{position:absolute;left:170px;top:466px;display:flex;gap:24px}
+#srcFoot{position:absolute;left:172px;top:646px;font-family:var(--mono);font-size:20px;color:var(--mute);opacity:0}
+.pill{display:inline-flex;align-items:center;justify-content:center;gap:14px;width:400px;height:100px;border:1px solid var(--line);
+  border-radius:14px;font-size:27px;color:var(--mute);background:rgba(255,255,255,.02);position:relative}
+.pill.on{color:var(--ink);border-color:rgba(239,236,230,.4)}
+.pill .pt{position:absolute;right:18px;top:16px;width:9px;height:9px;border-radius:50%;background:var(--accent);opacity:0}
+
+/* 7 · rollback */
+#rbCard{left:190px;top:330px;width:1120px;border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.028);padding:44px 48px;box-sizing:border-box}
+#rbCard .t{font-family:var(--mono);font-size:22px;color:var(--mute)}
+#rbCard .d{margin-top:16px;font-family:var(--mono);font-size:38px;color:var(--ink)}
+#rbCard .d s{color:var(--accent2)}
+#rbCard .k{margin-top:26px;font-size:30px;color:var(--mute)}
+#rbCard .k b{color:var(--ink);font-weight:500}
+
+/* 8 · toast + dialog */
+#toastWrap{left:0;top:0;width:1920px;height:1080px}
+#toastimg{position:absolute;left:0;top:0;width:496px;height:144px;border-radius:16px}
+#toastNote{position:absolute;left:0;right:0;top:352px;text-align:center;font-size:52px;color:var(--mute)}
+#toastNote b{color:var(--ink);font-weight:500}
+#toastHint{position:absolute;left:0;right:0;top:436px;text-align:center;font-family:var(--mono);font-size:24px;color:var(--mute)}
+#mask{position:absolute;inset:0;background:rgba(4,3,8,.62)}
+#dlgFrame{position:absolute;left:0;top:0;width:1184px;height:704px;border-radius:18px;overflow:hidden;background:linear-gradient(180deg,#1a1822,#141219);border:1px solid var(--line);box-shadow:0 40px 90px -40px rgba(0,0,0,.9)}
+#dlgPanel{position:absolute;left:0;top:0;transform:scale(.8);transform-origin:0 0}
+#dlgCap{position:absolute;left:152px;top:96px;font-size:30px;color:var(--mute);opacity:0;letter-spacing:.01em}
+
+/* 9 · principles */
+#principles{left:0;top:0;width:1920px;height:1080px}
+.pr{position:absolute;left:210px;font-size:58px;color:var(--ink);letter-spacing:-.01em}
+.pr b{color:var(--accent);font-weight:500}
+.prBar{position:absolute;left:150px;width:5px;height:64px;background:var(--line)}
+
+/* 10 · closing */
+#final{left:210px;top:400px;font-family:var(--display);font-weight:var(--display-weight);font-size:104px;letter-spacing:-.03em}
+#final .sm{display:block;margin-top:26px;font-family:var(--text);font-weight:400;font-size:30px;color:var(--mute);letter-spacing:0}
+
+/* 11 · end card */
+#end{left:0;top:0;width:1920px;height:1080px;background:var(--deep);opacity:0}
+#endInner{position:absolute;left:210px;top:330px}
+#endName{font-family:var(--display);font-weight:600;font-size:96px;letter-spacing:-.03em}
+#endSub{margin-top:22px;font-size:29px;color:var(--mute);font-family:var(--mono)}
+#endCredit{margin-top:120px;font-size:21px;color:var(--mute);line-height:2;font-family:var(--mono)}
+#black{position:absolute;inset:0;background:#000;opacity:0}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="vign"></div>
+
+  <div id="open" class="abs"><div id="o1"><span>插件，越装越多。</span></div></div>
+
+  <div id="chips" class="abs"></div>
+
+  <div id="gate" class="abs">
+    <div id="log"><span class="l1" id="l1"></span><span id="c1" class="caret"></span><br><span id="l2"></span><span id="c2" class="caret"></span></div>
+  </div>
+  <div id="row" class="abs">
+    <div class="n">dsh-skills-manager</div>
+    <div class="v">0.2.0 · 未加载</div>
+    <div class="x"></div>
+  </div>
+  <div id="gateNote" class="abs"></div>
+
+  <div id="titleWrap" class="abs">
+    <div id="title"></div>
+    <div id="subtitle">它只做一件事：看清版本，安全地更新。</div>
+    <div id="hint">不自动更新 · 不碰插件内部 · 状态只在本地</div>
+  </div>
+
+  <div id="panel" class="abs">
+    <div class="edge e-top"></div><div class="edge e-right"></div>
+    <div class="edge e-bottom"></div><div class="edge e-left"></div>
+    <div class="pbody">
+      <div class="ptitle" id="ptitle">插件更新</div>
+      <div class="psub" id="psub">查看本机已安装插件的版本状态，并在与本机 DSH 兼容的范围内更新；升级到最新版时会被版本闸拦截。</div>
+      <div class="ptool" id="ptool">
+        <span class="tlbl">更新源</span>
+        <span class="tsel">npm 国内镜像<i></i></span>
+        <span class="tbtn" id="checkBtn">立即检查</span>
+        <span class="tbtn primary" id="oneBtn">一键更新</span>
+        <span class="tlast" id="lastChecked">最后检查 2 分钟前</span>
+      </div>
+      <div class="thead" id="thead"><span class="c1">插件</span><span class="c2">已装</span><span class="c3">状态</span><span class="c4">操作</span></div>
+      <div class="rows" id="rows"></div>
+      <div class="pfoot" id="pfoot">共 5 个插件 · 已忽略 0 个 · 检查间隔 6 小时</div>
+    </div>
+  </div>
+
+  <div id="focusWrap" class="abs">
+    <div id="vbig">0.30.1</div>
+    <div id="vstrike"></div>
+    <div id="vwhy">最新版要求更高的内核<br>本机 <b>0.2.1-rc.4</b> 装不上</div>
+    <div id="vnew">0.26.1</div>
+    <div id="vnewlab">与本机 DSH 兼容的最高版本</div>
+    <div id="focusShade"></div>
+    <div id="focusName">dsh-better-sidebar</div>
+    <div id="focusVer">0.20.0 · 本机 DSH 0.2.1-rc.4</div>
+    <div id="tap"></div>
+    <div id="done">更新完成 · 重启后应用</div>
+  </div>
+
+  <div id="cursor" class="abs">
+    <svg width="34" height="34" viewBox="0 0 34 34"><path d="M6 3 L6 27 L12.4 21.2 L16.6 30 L21 28 L16.8 19.4 L25 19 Z" fill="#efece6" stroke="#15131c" stroke-width="1.6"/></svg>
+  </div>
+
+  <div id="srcWrap" class="abs">
+    <div id="srcHead">更新源，四档任选</div>
+    <div id="srcSub">全局默认 + 每个插件可以单独覆盖</div>
+    <div id="srcFoot">registry.npmjs.org · registry.npmmirror.com · api.github.com · gh-proxy 镜像前缀</div>
+    <div id="srcs">
+      <span class="pill">npm 官方<i class="pt"></i></span>
+      <span class="pill">npm 国内镜像<i class="pt"></i></span>
+      <span class="pill">GitHub 发布<i class="pt"></i></span>
+      <span class="pill">GitHub 国内镜像<i class="pt"></i></span>
+    </div>
+  </div>
+
+  <div id="rbCard" class="abs">
+    <div class="t">dependencies</div>
+    <div class="d">"dshmarket": "1.73.15"</div>
+    <div class="k">其余 <b>26 项</b>原样保留 · 安装清单逐字节恢复</div>
+  </div>
+
+  <div id="toastWrap" class="abs">
+    <div id="toastNote">重启之后，<b>右下角会告诉你。</b></div>
+    <div id="toastHint">哪个插件，从哪个版本到哪个版本</div>
+    <img id="toastimg" src="../assets/toast.png" alt="">
+    <div id="dlgCap">点击右下角的浮窗 · 直接进更新页</div>
+    <div id="mask"></div>
+    <div id="dlgFrame"><div id="dlgPanel"></div></div>
+  </div>
+
+  <div id="principles" class="abs">
+    <div class="prBar" id="pb1"></div><div class="pr" id="p1">不自动更新，<b>每一次都要你点头</b></div>
+    <div class="prBar" id="pb2"></div><div class="pr" id="p2">不改插件内部，<b>只动安装清单和依赖</b></div>
+    <div class="prBar" id="pb3"></div><div class="pr" id="p3">不上传任何东西，<b>状态只存在本机</b></div>
+  </div>
+
+  <div id="final" class="abs">更新这件事，本该这么简单。<span class="sm">dsh-plugin-update-manager</span></div>
+
+  <div id="end" class="abs">
+    <div id="endInner">
+      <div id="endName">插件更新管理器</div>
+      <div id="endSub">dsh-plugin-update-manager · 一个很小的 DSH 插件</div>
+      <div id="endCredit">音乐 "Voxel Revolution" — Kevin MacLeod (incompetech.com)<br>CC BY 4.0 · 本片只用了这一首现成音乐</div>
+    </div>
+  </div>
+
+  <div id="black"></div>
+</div>
+
+<script src="motion.js"></script>
+<script src="look2.js"></script>
+<script>
+(function(){
+'use strict';
+var OM = window.OM;
+var B = 60/122;
+var DUR = 87.0;
+function Q(s){ return Math.round(s/B)*B; }
+function $(id){ return document.getElementById(id); }
+function clamp(x,a,b){ return Math.min(b, Math.max(a, x)); }
+function seg(t,a,b){ return clamp((t-a)/(b-a||1e-6),0,1); }
+function easeOut(x){ return 1-Math.pow(1-x,3); }
+function smoother(x){ x=clamp(x,0,1); return x*x*x*(x*(x*6-15)+10); }
+function env(t,t0,t1,fin,fout){
+  var a = fin ? seg(t,t0,t0+fin) : 1;
+  var b = fout ? 1-seg(t,t1-fout,t1) : 1;
+  var on = (t>=t0 && t<=t1) ? 1 : 0;
+  return on ? Math.min(a,b) : 0;
+}
+
+/* ---------- chips data ---------- */
+var CHIPS = [
+  ['dsh-better-sidebar','0.20.0',0],['@dsh-eda/bridge','0.3.1',0],['dsh-univer-office','0.3.0',0],['dsh-linkswift','2.4.0',0],
+  ['dsh-memewiki','0.1.4',0],['@xmanrui/dsh-im','5.9.0',0],['dsh-context','0.82.1',0],['dshmarket','1.73.6',0],
+  ['dsh-bili-scroll','2.5.0',1],['billion-context','0.1.213',1],['minecraft-dev','0.13.2',1],['dsh-vk1-balance-widget','0.2.3',0],
+  ['dsh-plugin-jarvis','0.6.0',0],['dynamic-thinking-chain','0.2.2',0],['@local/dsh-unity-bridge','0.1.0',0],['dsh-skills-manager','0.2.0',1]
+];
+var chipsEl = $('chips'), chips = [];
+(function(){
+  for (var i=0;i<CHIPS.length;i++){
+    var c = document.createElement('div');
+    c.className = 'chip';
+    var col = i%4, row = (i/4)|0;
+    var x = 240 + col*370, y = 214 + row*118;
+    c.style.left = x+'px'; c.style.top = y+'px'; c.style.opacity = 0;
+    c.innerHTML = '<span class="dot"></span><div class="nm">'+CHIPS[i][0]+'</div><div class="vv'+(CHIPS[i][2]?' warn':'')+'">'+CHIPS[i][1]+'</div>';
+    chipsEl.appendChild(c);
+    chips.push({el:c, x:x, y:y});
+  }
+})();
+
+/* ---------- panel rows data ---------- */
+var ROWS = [
+  {name:'@deepseek-ai/dsh-base', kind:'内置', ver:'0.2.1-rc.4', st:'内置', act:'', after:null},
+  {name:'@deepseek-ai/dsh-web-app', kind:'内置', ver:'0.2.1-rc.4', st:'内置', act:'', after:null},
+  {name:'dshmarket', kind:'', ver:'1.73.6', st:'有可用更新', act:'更新到 1.73.15', hot:false, after:null},
+  {name:'dsh-better-sidebar', kind:'', ver:'0.20.0', st:'有兼容更新', act:'更新到兼容版 0.26.1', hot:true, after:'compatible'},
+  {name:'dsh-plugin-update-manager', kind:'本地', ver:'0.1.0', st:'本地', act:'', after:null}
+];
+var rowsEl = $('rows'), rows = [];
+(function(){
+  for (var i=0;i<ROWS.length;i++){
+    var r = ROWS[i];
+    var d = document.createElement('div');
+    d.className = 'prow';
+    d.style.top = (i*88)+'px';
+    d.innerHTML =
+      '<span class="c1"><span class="nm">'+r.name+'</span>'+(r.kind?'<span class="kd">'+r.kind+'</span>':'')+'</span>'+
+      '<span class="c2">'+r.ver+'</span>'+
+      '<span class="c3"></span>'+
+      '<span class="c4"></span>';
+    rowsEl.appendChild(d);
+    rows.push({el:d, st:d.querySelector('.c3'), act:d.querySelector('.c4'), data:r});
+  }
+})();
+rowsEl.style.position='absolute'; rowsEl.style.left='60px'; rowsEl.style.right='60px'; rowsEl.style.top='340px';
+
+/* ---------- title letters ---------- */
+(function(){
+  var t = $('title'), s = '插件更新管理器';
+  for (var i=0;i<s.length;i++){
+    var sp = document.createElement('span'); sp.textContent = s[i]; t.appendChild(sp);
+  }
+})();
+
+/* ---------- timeline ---------- */
+var T = {
+  open0:0.00, open1:Q(4.4),
+  chip0:Q(4.4), chip1:Q(10.9),
+  gate0:Q(10.9), gate1:Q(17.9),
+  log0:Q(11.15), log1:Q(17.7),
+  rowAppear:Q(15.2), note:Q(16.3),
+  title0:Q(17.9), title1:Q(23.6),
+  panel0:Q(23.6), border0:Q(23.7), body0:Q(25.0),
+  pt0:Q(25.1), ps0:Q(25.55), rows0:Q(26.3), rowsStep:0.30,
+  tool0:Q(28.3), checkClick:Q(29.5), scan0:Q(29.8), scan1:Q(32.6), result0:Q(32.9),
+  oneBtn0:Q(34.4),
+  focus0:Q(36.2), focus1:Q(37.7),
+  annot0:Q(37.9), annot1:Q(39.4),
+  cursor0:Q(39.8), click:Q(41.4), done0:Q(43.4),
+  panelOut:Q(44.9),
+  src0:Q(45.1), src1:Q(51.0),
+  rb0:Q(50.9), rb1:Q(56.9),
+  toast0:Q(56.7), toast1:Q(64.3),
+  pr0:Q(64.1), pr1:Q(71.0),
+  fin0:Q(70.9), fin1:Q(77.2),
+  end0:Q(78.0), black0:Q(84.5)
+};
+
+var LOG1 = 'skipping profile bundle "dsh-skills-manager":';
+var LOG2 = '  @deepseek-ai/dsh ^0.1.3-alpha.2  is incompatible with  dsh 0.2.1-rc.4';
+function seek(t){
+  var dr = $('stage');
+  dr.style.transform = 'translate(' + (5*Math.sin(t*0.17)) + 'px,' + (4*Math.sin(t*0.273+1.1)) + 'px)';
+
+  /* 1 · opening line, then it becomes the grid's caption */
+  var e1 = env(t, 0, T.chip1, 0.85, 0.5);
+  var k0 = OM.spring(t - 0.08, 0.62, 20);
+  var capK = smoother(seg(t, T.chip0, T.chip0+1.3));
+  var o1 = $('o1');
+  o1.style.opacity = e1 * clamp(k0*1.5,0,1);
+  o1.style.transform = 'translateY(' + ((1-k0)*54 - capK*292) + 'px) scale(' + ((0.97+0.03*k0)*(1-0.52*capK)) + ')';
+  o1.style.filter = 'blur(' + ((1-e1)*7) + 'px)';
+
+  /* 2 · chips land */
+  for (var i=0;i<chips.length;i++){
+    var c = chips[i];
+    var t0 = T.chip0 + 0.06 + i*0.085;
+    var k = OM.spring(t - t0, 0.62, 20);
+    var out = smoother(seg(t, T.chip1-0.7, T.chip1));
+    c.el.style.opacity = clamp(k*1.6,0,1) * (1-out);
+    var cx = 960 - (c.x + 165 - 960)*0.30, cy = 540 - (c.y + 42 - 540)*0.30;
+    c.el.style.transform = 'translate(' + ((cx-c.x)*out) + 'px,' + ((cy-c.y)*out + (1-k)*40) + 'px) scale(' + ((0.92+0.08*k)*(1-0.30*out)) + ')';
+    c.el.style.filter = 'blur(' + (out*6) + 'px)';
+  }
+
+  /* 3 · the gate */
+  var gl = env(t, T.log0, T.log1, 0.45, 0.6);
+  var lg = $('log');
+  lg.style.opacity = gl;
+  if (gl > 0.001){
+    var ty1 = OM.typeOn(t, T.log0+0.3, LOG1, {cps:26});
+    var ty2 = OM.typeOn(t, T.log0+2.5, LOG2, {cps:38});
+    var blink = (Math.floor(t*2.4)%2===0)?1:0;
+    $('l1').textContent = ty1.str;
+    $('l2').textContent = ty2.str;
+    $('c1').style.opacity = (ty1.done && !ty2.done) ? 1 : 0;
+    $('c2').style.opacity = (ty2.done && t < T.note) ? blink : 0;
+  }
+  var rw = env(t, T.rowAppear, Q(16.9), 0.5, 0.45);
+  var r = $('row');
+  r.style.display = rw > 0.002 ? 'block' : 'none';
+  var rk = OM.spring(t - T.rowAppear, 0.6, 18);
+  r.style.opacity = rw;
+  r.style.transform = 'translateY(' + ((1-rk)*34) + 'px) scale(' + (0.97+0.03*rk) + ')';
+  var gn = env(t, T.note, Q(17.8), 0.4, 0.4);
+  $('gateNote').style.opacity = gn;
+  $('gateNote').innerHTML = '提示是没有的。<b>它只是不加载。</b>';
+  $('gateNote').style.transform = 'translateY(' + ((1-OM.spring(t-T.note,0.6,18))*22) + 'px)';
+
+  /* 4 · the name */
+  var tt = env(t, T.title0, T.title1, 0.6, 0.7);
+  var spans = $('title').childNodes;
+  for (var j=0;j<spans.length;j++){
+    var w = OM.wordRise(t, T.title0+0.25+j*0.06, {dist:64, s0:0.9, omega:20});
+    spans[j].style.opacity = tt*w.op;
+    spans[j].style.transform = 'translateY('+w.y+'px) scale('+w.s+')';
+  }
+  $('subtitle').style.opacity = env(t, Q(19.5), T.title1, 0.5, 0.6);
+  $('subtitle').style.transform = 'translateY(' + ((1-OM.spring(t-Q(19.5),0.6,16))*22) + 'px)';
+  $('hint').style.opacity = env(t, Q(20.7), T.title1, 0.5, 0.6)*0.92;
+
+  /* 5 · the plugin manager, drawn */
+  var panel = $('panel');
+  var pv = env(t, T.body0, T.panelOut, 0.5, 0.34);
+  var scaleF = 1 + 0.45*smoother(seg(t, T.focus0, T.focus1));
+  var kf = smoother(seg(t, T.focus0, T.focus1));
+  var txF = -1330*kf, tyF = -470*kf;
+  var pull = smoother(seg(t, T.panelOut-0.1, T.panelOut+0.8));
+  var pk = OM.spring(t - T.panel0, 0.72, 14);
+  panel.style.opacity = pv*(1-pull);
+  panel.style.transform = 'translate(' + txF + 'px,' + (tyF + (1-pk)*24 - pull*30) + 'px) scale(' + (0.985+0.015*pk)*scaleF*(1-0.03*pull) + ')';
+  panel.style.transformOrigin = '0 0';
+
+  var bd = seg(t, T.border0, T.border0+0.55);
+  $('panel').querySelector('.e-top').style.transform = 'scaleX(' + bd + ')';
+  $('panel').querySelector('.e-left').style.transform = 'scaleY(' + seg(t, T.border0+0.35, T.border0+0.85) + ')';
+  $('panel').querySelector('.e-bottom').style.transform = 'scaleX(' + seg(t, T.border0+0.7, T.border0+1.2) + ')';
+  $('panel').querySelector('.e-right').style.transform = 'scaleY(' + seg(t, T.border0+1.0, T.border0+1.5) + ')';
+
+  $('ptitle').style.opacity = env(t, T.pt0, T.panelOut, 0.5, 0.5);
+  $('ptitle').style.transform = 'translateY(' + ((1-OM.spring(t-T.pt0,0.6,16))*18) + 'px)';
+  var focusK = smoother(seg(t, T.focus0, T.focus1));
+  var fa = env(t, T.annot0, T.panelOut, 0.5, 0.3);
+  $('psub').style.opacity = env(t, T.ps0, T.panelOut, 0.6, 0.5) * (1-0.86*focusK);
+  $('psub').style.transform = 'translateY(' + ((1-OM.spring(t-T.ps0,0.6,16))*16) + 'px)';
+
+  /* rows: slide in from the right, one after another */
+  for (var ri=0; ri<rows.length; ri++){
+    var rw2 = rows[ri];
+    var t0r = T.rows0 + ri*T.rowsStep;
+    var kr = OM.spring(t - t0r, 0.58, 18);
+    var eRow = env(t, t0r, T.panelOut, 0.42, 0.45);
+    rw2.el.style.opacity = eRow * (ri===3 ? 1 : (1-0.94*focusK));
+    rw2.el.style.transform = 'translateX(' + ((1-kr)*120) + 'px)';
+    rw2.el.style.filter = 'blur(' + ((1-eRow)*5) + 'px)';
+  }
+  /* row cells: status + action */
+  var checked = t >= T.result0;
+  var scanning = t >= T.scan0 && t < T.result0;
+  for (var ri2=0; ri2<rows.length; ri2++){
+    var rr = rows[ri2], d = rr.data;
+    if (d.name === 'dsh-better-sidebar'){
+      if (scanning){
+        rr.st.innerHTML = '<span style="opacity:.55">检查中…</span>';
+        var sp = 0.5 + 0.5*Math.sin((t-T.scan0)*2.6);
+        rr.act.innerHTML = '<span class="scan" style="left:'+(sp*26)+'%;opacity:'+(0.55+0.45*Math.sin((t-T.scan0)*7))+';"></span>';
+      } else if (checked){
+        rr.st.innerHTML = '<span class="tag ok">有兼容更新</span>';
+        rr.act.innerHTML = '<span class="abtn hot" id="hotBtn">更新到兼容版 0.26.1</span>';
+      } else if (t >= T.result0-0.2){
+        rr.st.innerHTML = '';
+      } else {
+        rr.st.innerHTML = '';
+      }
+    } else if (d.name === 'dshmarket'){
+      if (scanning){ rr.st.innerHTML = '<span style="opacity:.5">检查中…</span>'; }
+      else if (checked){ rr.st.innerHTML = '<span class="tag warn">有可用更新</span>'; rr.act.innerHTML = '<span class="abtn">'+d.act+'</span>'; }
+    } else {
+      rr.st.innerHTML = '<span class="tag">' + d.st + '</span>';
+    }
+  }
+
+  /* toolbar, last */
+  var te = env(t, T.tool0, T.panelOut, 0.5, 0.5);
+  $('ptool').style.opacity = te;
+  $('ptool').style.transform = 'translateY(' + ((1-OM.spring(t-T.tool0,0.6,16))*16) + 'px)';
+  var cb = $('checkBtn');
+  var press = OM.press(t, T.checkClick, {depth:0.06, decay:11, omega:30});
+  cb.style.transform = 'scale('+press.s+')';
+  cb.style.background = press.active ? 'rgba(255,255,255,.12)' : 'rgba(255,255,255,.03)';
+  cb.textContent = scanning ? '检查中…' : '立即检查';
+  $('lastChecked').textContent = checked ? '最后检查 刚刚' : '最后检查 2 分钟前';
+  var ob = $('oneBtn');
+  var ok = OM.spring(t - T.oneBtn0, 0.6, 17);
+  ob.style.opacity = clamp(ok*1.4,0,1);
+  ob.style.transform = 'translateY(' + ((1-ok)*22) + 'px) scale(' + (0.9+0.1*ok) + ')';
+  $('thead').style.opacity = env(t, T.rows0-0.2, T.panelOut, 0.4, 0.4) * (1-0.86*focusK);
+  $('pfoot').style.opacity = env(t, Q(30.6), T.panelOut, 0.5, 0.4) * (1-0.86*focusK);
+  $('focusShade').style.opacity = fa;
+  $('focusName').style.opacity = fa;
+  $('focusVer').style.opacity = fa*0.95;
+
+  /* focus annotation on the right */
+  fa = env(t, T.annot0, T.panelOut, 0.5, 0.3);
+  var vb = $('vbig');
+  vb.style.opacity = fa;
+  vb.style.transform = 'translateY(' + ((1-OM.spring(t-T.annot0,0.6,16))*40) + 'px)';
+  var strike = easeOut(seg(t, T.annot0+0.8, T.annot0+1.5));
+  $('vstrike').style.width = (strike*430)+'px';
+  $('vstrike').style.opacity = fa;
+  $('vwhy').style.opacity = env(t, T.annot0+0.9, T.panelOut, 0.5, 0.3);
+  $('vnew').style.opacity = env(t, T.annot1, T.panelOut, 0.5, 0.3);
+  $('vnewlab').style.opacity = env(t, T.annot1+0.35, T.panelOut, 0.5, 0.3);
+
+  /* cursor: moves to the button, clicks */
+  var cur = $('cursor');
+  var ce = env(t, T.cursor0, Q(44.2), 0.25, 0.5);
+  var ck = smoother(seg(t, T.cursor0, T.cursor0+1.15));
+  var cx2 = 1690 + (700-1690)*ck, cy2 = 905 + (560-905)*ck;
+  cur.style.opacity = ce;
+  cur.style.transform = 'translate(' + cx2 + 'px,' + cy2 + 'px) scale(' + (1 - 0.08*Math.sin(Math.PI*clamp((t-T.click)/0.22,0,1))) + ')';
+  var tp = $('tap');
+  var tapK = seg(t, T.click-0.02, T.click+0.42);
+  tp.style.opacity = (tapK>0 && tapK<1) ? (1-tapK)*0.9 : 0;
+  tp.style.transform = 'translate(666px,536px) scale(' + (0.4+0.9*tapK) + ')';
+
+  /* update happened */
+  var dn = env(t, T.done0, T.panelOut, 0.45, 0.3);
+  var dEl = $('done');
+  dEl.style.opacity = dn;
+  dEl.style.transform = 'translate(700px,706px) translateY(' + ((1-OM.spring(t-T.done0,0.55,17))*18) + 'px)';
+  var hot = document.getElementById('hotBtn');
+  if (hot){
+    if (t > T.click + 0.35 && t < T.done0) hot.textContent = '更新中…';
+    else if (t >= T.done0) hot.textContent = '已更新到 0.26.1';
+  }
+
+  /* 6 · sources */
+  var sv = env(t, T.src0, T.src1, 0.5, 0.5);
+  $('srcHead').style.opacity = sv;
+  $('srcHead').style.transform = 'translateY(' + ((1-OM.spring(t-T.src0,0.6,16))*26) + 'px)';
+  $('srcSub').style.opacity = env(t, T.src0+0.4, T.src1, 0.5, 0.5);
+  $('srcFoot').style.opacity = env(t, T.src0+1.6, T.src1, 0.5, 0.4);
+  var pills = $('srcs').children;
+  for (var pi=0; pi<pills.length; pi++){
+    var p0 = T.src0+0.75+pi*0.30;
+    var kp = OM.spring(t - p0, 0.6, 17);
+    var onAt = T.src0+2.2+pi*0.55;
+    var on = t > onAt;
+    pills[pi].style.opacity = sv*clamp(kp*1.5,0,1);
+    pills[pi].style.transform = 'translateY(' + ((1-kp)*44) + 'px)';
+    pills[pi].classList.toggle('on', on);
+    pills[pi].querySelector('.pt').style.opacity = on ? 1 : 0;
+    pills[pi].querySelector('.pt').style.transform = 'scale(' + (on ? 1 : 0.4) + ')';
+  }
+
+  /* 7 · rollback */
+  var rbv = env(t, T.rb0, T.rb1, 0.5, 0.6);
+  var rb = $('rbCard');
+  rb.style.opacity = rbv;
+  var rbk = OM.spring(t - T.rb0, 0.66, 15);
+  rb.style.transform = 'translateY(' + ((1-rbk)*40) + 'px) scale(' + (0.97+0.03*rbk) + ')';
+  var del = easeOut(seg(t, T.rb0+1.1, T.rb0+1.8));
+  rb.querySelector('.d').style.textDecoration = del > 0.5 ? 'line-through' : 'none';
+  rb.querySelector('.d').style.textDecorationColor = 'var(--accent2)';
+  rb.querySelector('.d').style.opacity = 1-0.45*del;
+
+  /* 8 · toast, then dialog */
+  var tv = env(t, T.toast0, T.toast1, 0.5, 0.6);
+  $('toastNote').style.opacity = env(t, T.toast0, Q(59.4), 0.5, 0.45);
+  $('toastHint').style.opacity = env(t, T.toast0+0.5, Q(59.4), 0.5, 0.45);
+  var tk = OM.spring(t - (T.toast0+1.5), 0.66, 14);
+  $('toastimg').style.opacity = tv*clamp(tk*1.4,0,1);
+  $('toastimg').style.transform = 'translate(' + (1420 + (1-tk)*190) + 'px,' + (900 + (1-tk)*10) + 'px) scale(' + (0.94+0.06*tk) + ')';
+  $('mask').style.opacity = env(t, Q(59.6), T.toast1, 0.5, 0.7);
+  $('dlgCap').style.opacity = env(t, Q(60.4), T.toast1, 0.5, 0.5);
+  var dk = OM.spring(t - Q(59.9), 0.7, 15);
+  var dlg = $('dlgFrame');
+  dlg.style.opacity = tv*clamp(dk*1.3,0,1);
+  dlg.style.transform = 'translate(' + (368 + (1-dk)*180) + 'px,' + (188 + (1-dk)*36) + 'px) scale(' + (1+(1-dk)*0.06) + ')';
+
+  /* 9 · principles */
+  var pe = env(t, T.pr0, T.pr1, 0.5, 0.6);
+  var prs = [['p1','pb1'],['p2','pb2'],['p3','pb3']];
+  for (var qi=0; qi<3; qi++){
+    var q0 = T.pr0+qi*0.62;
+    var kq = OM.spring(t - q0, 0.62, 17);
+    var py = 400 + qi*168;
+    var el = $(prs[qi][0]);
+    el.style.top = py+'px';
+    el.style.opacity = pe*clamp(kq*1.5,0,1);
+    el.style.transform = 'translateX(' + ((1-kq)*70) + 'px)';
+    var bar = $(prs[qi][1]);
+    bar.style.top = (py+6)+'px';
+    bar.style.opacity = pe*clamp(kq*1.4,0,1);
+    bar.style.transform = 'scaleY(' + kq + ')';
+    bar.style.transformOrigin = '50% 0';
+  }
+
+  /* 10 · closing */
+  var fe = env(t, T.fin0, T.fin1, 0.7, 0.8);
+  var fin = $('final');
+  fin.style.opacity = fe;
+  fin.style.transform = 'translateY(' + ((1-OM.spring(t-T.fin0,0.7,15))*50) + 'px)';
+  fin.querySelector('.sm').style.opacity = env(t, T.fin0+0.7, T.fin1, 0.6, 0.6)*0.9;
+
+  /* 11 · end card */
+  var en = env(t, T.end0, 999, 1.3, 0);
+  $('end').style.opacity = en;
+  var ek = OM.spring(t - (T.end0+0.2), 0.7, 14);
+  $('endInner').style.transform = 'translateY(' + ((1-ek)*30) + 'px)';
+  $('black').style.opacity = smoother(seg(t, T.black0, T.black0+2.6));
+}
+
+window.__dur = DUR;
+window.__meta = { fps: 30, dur: DUR, cuts: [0.33, 4.42, 11.0, 13.6, 17.7, 18.0, 23.3, 25.5, 45.0, 50.8, 56.8, 60.3, 64.3, 70.8, 77.6, 84.5] };
+window.__ready = (window.LOOK && window.LOOK.ready ? window.LOOK.ready : Promise.resolve()).then(function(){
+  return document.fonts.ready;
+}).then(function(){
+  try { seek(35.2); } catch(e){ console.error('SEEKERR', e && e.stack || e); }
+  (function(){
+    var src = document.getElementById('panel');
+    var cp = src.cloneNode(true);
+    cp.removeAttribute('id');
+    var ids = cp.querySelectorAll('[id]');
+    for (var i=0;i<ids.length;i++) ids[i].removeAttribute('id');
+    cp.style.position = 'relative'; cp.style.left = '0'; cp.style.top = '0';
+    cp.style.width = '1480px'; cp.style.height = '880px';
+    cp.style.opacity = 1; cp.style.transform = 'none';
+    document.getElementById('dlgPanel').appendChild(cp);
+  })();
+  try { seek(0); } catch(e){ console.error('SEEKERR', e && e.stack || e); }
+  window.__seek = function(t){ try { seek(t); } catch(e){ console.error('SEEKERR', e && e.stack || e); } };
+});
+
+})();
+</script>
+</body>
+</html>
