@@ -4,7 +4,18 @@
 但**推送 GitHub 与发布 npm 需要你本人的凭据**（本机没有登录 GitHub CLI / npm，且当前网络到 github.com 不稳定），
 所以剩下这几步需要你自己执行——都是复制粘贴即可。
 
-## 一、GitHub
+## 一、GitHub（已完成 ✅）
+
+仓库已推送：https://github.com/REX97496/dsh-plugin-update-manager
+本机可用的推送命令（代理端口 7897 + 关闭证书吊销校验）：
+
+```bash
+export HTTPS_PROXY=http://127.0.0.1:7897 HTTP_PROXY=http://127.0.0.1:7897
+GIT_SSL_NO_VERIFY=true git push
+```
+
+历史版本说明（首次建仓时的手工步骤）：
+
 
 1. 在 https://github.com/new 新建仓库 `dsh-plugin-update-manager`（不要勾选 README / .gitignore，保持空仓库）。
 2. 回到本项目根目录执行：
@@ -29,7 +40,7 @@ git push -u origin main
 > ```
 > 或者改用 SSH：`git remote set-url origin git@github.com:REX97496/dsh-plugin-update-manager.git`。
 
-## 二、npm
+## 二、npm（待登录后发布）
 
 npm 官方源需要登录（当前 `npm whoami` 为 `ENEEDAUTH`，且默认源是 npmmirror，不能发布到镜像）：
 
