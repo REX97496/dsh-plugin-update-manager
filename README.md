@@ -30,6 +30,15 @@ DSH 的插件有 `engines.dsh` / `@deepseek-ai/dsh*` peer 版本闸，直接 `pn
 
 ## 安装
 
+插件已发布到 npm：[`dsh-plugin-update-manager`](https://www.npmjs.com/package/dsh-plugin-update-manager)。
+
+```powershell
+cd "$env:USERPROFILE\.dsh\profiles\desktop"
+pnpm add dsh-plugin-update-manager --save-exact
+```
+
+装完后把 `dsh-plugin-update-manager` 加进该 profile `package.json` 的 `dsh.profile.bundles`，再完全退出并重开桌面版。
+
 插件需要装进**目标 profile 的 `node_modules`**，并在该 profile 的 `package.json` 里登记 bundle。
 
 ### 方式一：在 profile 目录用 pnpm 安装（推荐，可离线）
