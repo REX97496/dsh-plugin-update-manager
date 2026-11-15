@@ -1,6 +1,6 @@
 {
   "name": "dsh-plugin-update-manager",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "DSH 插件更新管理器：在设置页检查已安装插件的版本状态，并安全地升级到最新版或与本机 DSH 兼容的版本。支持 npm 官方 / npm 国内镜像 / GitHub / GitHub 国内镜像四种更新源。",
   "keywords": [
     "compatibility",
