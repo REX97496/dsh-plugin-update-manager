@@ -21,6 +21,10 @@ DSH 的插件有 `engines.dsh` / `@deepseek-ai/dsh*` peer 版本闸，直接 `pn
 > - `docs/screenshots/tab-in-builtin-plugins.png`
 > - `docs/screenshots/diag-banner.png` — 启动诊断横幅：「启动诊断：N 个插件加载异常 / 查看分析 / 重新诊断」
 > - `docs/screenshots/diag-dialog.png` — 诊断分析弹窗：每个异常的插件、错误码、原因、可复制修复命令 — 同样的表格也注册在「设置 → 内置插件 → 插件更新」tab
+> - `docs/screenshots/manage-rows.png` — 每行右侧「⋯」菜单入口 + 加载失败红色徽标
+> - `docs/screenshots/manage-menu.png` — 「⋯」菜单展开：重新安装 / 卸载
+> - `docs/screenshots/manage-uninstall-confirm.png` — 卸载确认弹窗（删 dependencies 与 bundles、需重启）
+> - `docs/screenshots/manage-loadfailure.png` — 点红色「加载失败」只查看该插件的诊断原因
 
 ## 环境要求
 
@@ -256,12 +260,38 @@ dsh-plugin-update-manager update dshmarket@1.73.15
 | POST | `/diagnose` | `{ force? }` | `Diagnostics`：`{ checkedAt, scanned[], items[], errors[] }` |
 | POST | `/update` | `{ name, version }` | `{ operationId }`，立即返回 |
 | POST | `/update-all` | `{ names? }` | `{ operationId, queued }` |
+| POST | `/uninstall` | `{ name }` | `{ operationId }`，卸载该插件（见下节） |
+| POST | `/reinstall` | `{ name, version? }` | `{ operationId }`，重装；省略 `version` 时用当前已装版本 |
 | POST | `/cancel` | `{ operationId? }` | `{ cancelled: boolean }` |
 | POST | `/config` | `{ patch }` 或全量 config | 归一化后的 `UpdaterState`（切源会自动重查） |
 | GET | `/log` | `?limit=100` | `{ entries }` |
 | POST | `/restart` | — | `{ supported, scheduled?, mode: 'desktop'\|'cli'\|'none', message }` |
 
 更新任务串行执行：`activeOperationId` 非空时新请求排队（`operations[].state = 'queued'`）。状态里的 `capabilities` 为 `{ restart, restartMode, restartHint }`。
+
+## 卸载与重新安装
+
+设置页每一行插件右侧都有一个「⋯」菜单，里面是「重新安装」和「卸载」（危险色）；两者都走与更新相同的串行队列，做完需要重启宿主才会生效。操作进行中、或该行有排队任务时菜单会被禁用；两个操作都不碰别的插件，也**不允许**对本插件自己或内置/本地插件执行（菜单直接置灰，接口层返回 `self-operation` / `not-managed`）。
+
+**卸载**（`POST /uninstall { name }`）一次做三件事：
+
+1. 从 profile `package.json` 的 `dependencies` 删掉该包；
+2. 删除 `node_modules/<包名>`；
+3. 从 `dsh.profile.bundles` 里移除对应条目——按包名或 bundleId 匹配字符串或 `{ id, name }` 对象，**其余条目保持原有顺序**。
+
+动手前会把 `package.json`、`pnpm-lock.yaml`（存在才备）和该包的 `node_modules/<包名>`（存在且不超过 200MB 才备）备份到 `<DSH_HOME>/plugin-updater/backups/<包名>@<时间戳>-uninstall/`；卸载后回读确认依赖已删、目录已不存在，任一步失败就按备份逐字节恢复并返回 `uninstall-failed`。
+
+**重新安装**（`POST /reinstall { name, version? }`）用于修复损坏的包或退回某个已知可用版本：先整体备份，再按 §7 的流程卸掉旧包（**不动 bundles**），然后以 `version`（缺省为当前已装版本，精确版本、`--save-exact`）走正常的原子安装：备份 → 安装 → 回读校验。安装失败或版本不符时整体回滚到重装前的状态（含 `package.json`、lockfile、`node_modules/<包名>`），返回 `reinstall-failed`。
+
+被拒绝的两个前置条件（不会产生任何文件改动）：
+
+| 情况 | `error.code` | 说明 |
+|---|---|---|
+| 目标是内置包（`@deepseek-ai/*`）或 `link:`/`file:` 本地包 | `not-managed` | 内置包随 DSH 升级；本地包由你自己的工作目录管理 |
+| 目标是 `dsh-plugin-update-manager` 自己 | `self-operation` | 自毁会让面板在重启前失效；升级请用更新功能 |
+| 包管理器失败 / 回滚 | `uninstall-failed` / `reinstall-failed` | 失败时 `rolledBack` 为真，`backupDir` 指向备份目录 |
+
+桌面版运行中卸载可能撞上文件锁（同更新，见「故障排查」的 `windows-file-locked`）：先完全退出 DSH（含托盘）再操作。卸载后如果还残留 UI，重启即可消失。
 
 ## 已知限制
 
@@ -283,6 +313,7 @@ dsh-plugin-update-manager update dshmarket@1.73.15
 插件加载失败时，DSH 往往只把原因写进日志，界面上表现成「插件没生效」。本插件会读本地启动日志，把失败归因到具体插件，并给出可执行的下一步：
 
 - 打开设置页时，若有异常，顶部显示「启动诊断：N 个插件加载异常」，点「查看分析」看条目，点「重新诊断」强制重扫。
+- 命中的插件在列表里带**红色徽标**（「加载失败」），悬停可看一句话摘要，点徽标会打开诊断详情并定位到该插件；徽标只认 `error` 级条目，只有 `warn` 的插件不会被打红。
 - 自动扫描在插件挂载后约 9 秒执行一次（此时内核已写完启动日志），结果缓存在 `GET /state` 的 `diagnostics` 字段，60 秒内复用；`POST /diagnose { force?: true }` 可立即重扫。
 
 检查范围：
@@ -337,7 +368,7 @@ node --check lib/client.js
 npm test
 ```
 
-`npm test` 实际执行 `node --test --experimental-test-isolation=none test/*.test.js`。测试覆盖 `semver`、`compat`、`pick`、`sources`（本地 http 桩 + fetch 桩）、`update`（临时 profile + `DSH_UPDATER_FAKE_PM` 假包管理器 + pnpm 失败分类回归）、`store`、`state`（RPC 路由与状态）和 `diagnose`（真实日志样本在 `test/fixtures/logs/`，扫描时会复制到临时目录，不读仓库文件也不联网）。如果运行环境的 Node 测试运行器允许创建子进程，也可以用默认隔离模式：
+`npm test` 实际执行 `node --test --experimental-test-isolation=none test/*.test.js`。测试覆盖 `semver`、`compat`、`pick`、`sources`（本地 http 桩 + fetch 桩）、`update`（临时 profile + `DSH_UPDATER_FAKE_PM` 假包管理器 + pnpm 失败分类回归）、`remove`（卸载/重装 + 字节级回滚，同样走假包管理器）、`restart`（宿主探测与重启 helper）、`store`、`state`（RPC 路由、状态、`loadFailure`/`selfPlugin` 投影）和 `diagnose`（真实日志样本在 `test/fixtures/logs/`，扫描时会复制到临时目录，不读仓库文件也不联网）。如果运行环境的 Node 测试运行器允许创建子进程，也可以用默认隔离模式：
 
 ```powershell
 node --test test/*.test.js
@@ -356,6 +387,8 @@ lib/
     pick.js       # 候选选择与状态落表
     update.js     # 备份 → 安装 → 回读 → 回滚
     profile.js    # profile 与已装插件发现
+    remove.js     # 卸载 / 重新安装（备份 → 改 profile → 回读 → 回滚）
+    restart.js    # 宿主重启探测与分离式重启 helper
     diagnose.js   # 启动日志诊断（只读，不联网）
     http.js       # 代理感知的 HTTP 请求（可选 proxyUrl）
     store.js      # 配置 / 缓存 / 日志（唯一碰磁盘的状态模块）

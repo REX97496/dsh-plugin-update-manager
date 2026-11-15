@@ -513,3 +513,82 @@ spawn 前检查环境变量，为 `'success'|'mismatch'|'fail'` 时改用进程�
   表头/表体行高 44px；右侧操作列固定 200px；`font-family: inherit`。
 - 深浅色自动跟随（不写 `prefers-color-scheme`）。
 - 不引入 webfont、不引入图片资源；图标用 primitives 图标组件。
+
+## 7. 插件管理操作（v0.1.3）：卸载 / 重新安装 / 加载失败标记
+
+### 7.1 语义
+
+- **卸载**：从当前 profile 移除一个 registry 插件 —— 删除 `dependencies[<name>]`、删除 `node_modules/<name>`、
+  并从 `dsh.profile.bundles` 里移除对应条目（按 name 或 bundleId 匹配，保持其它条目顺序不变）。
+- **重新安装**：对同一个插件执行「先卸载，再用**当前工具栏选中的更新源**把**原来的版本**装回原位」。
+  `dsh.profile.bundles` 条目**全程保留**（安装失败回滚时也不会丢），dependencies 顺序由 pnpm 决定但值必须精确。
+- 两者都**不允许**操作：内置 `@deepseek-ai/*`（`builtin`）、本地 `link:/file:`（`local`）、以及**本插件自己**
+  （`dsh-plugin-update-manager`，否则会把自己正在运行的代码删掉）。错误码统一：
+  - `not-managed`：builtin/local，不允许管理
+  - `self-operation`：目标是本插件
+  - `uninstall-failed` / `reinstall-failed`：执行失败（附 `detail` 为 pnpm 原文尾部）
+
+### 7.2 `lib/core/remove.js`
+
+```js
+export async function uninstallPlugin({ profile, entry, stateDir, signal, timeoutMs, onProgress })
+// -> { ok, name, fromVersion, needsRestart, rolledBack, durationMs, backupDir, packageManager,
+//      error: {code,message,detail?}|null, log: string[] }
+
+export async function reinstallPlugin({ profile, entry, version, installSpec, installKind,
+                                        stateDir, signal, timeoutMs, onProgress })
+// -> 同上，额外 { toVersion }
+```
+
+流程（uninstall）：
+1. 校验 name/entry（builtin/local → `not-managed`；name === 'dsh-plugin-update-manager' → `self-operation`）。
+2. 备份 `<stateDir>/backups/<pkg>@<stamp>-uninstall/`：`package.json`、`pnpm-lock.yaml`（存在时）、`node_modules/<pkg>`（存在时）。
+3. 包管理器链与 update.js 完全一致（`profile.packageManager` → PATH pnpm → corepack pnpm → corepack pnpm@11），
+   args `[...base, 'remove', name, '--reporter=append-only']`，cwd `profile.dir`，超时/取消/`taskkill` 语义相同。
+4. 回读校验：`package.json.dependencies` 不再含该 name；`node_modules/<pkg>` 不存在。
+5. 从 `dsh.profile.bundles` 移除条目（保留其余项与顺序）。
+6. 失败/校验不过 → 恢复备份（含 bundles）并回报 `rolledBack: true`。
+7. `DSH_UPDATER_FAKE_PM` 钩子：`'success'` 走进程内模拟（删 deps 条目与 node_modules/<pkg>），`'fail'` 抛错触发回滚。
+
+流程（reinstall）：
+1. 同上校验；`version` 缺省用 `entry.installedVersion`，非法则 `reinstall-failed`。
+2. 先做**整体**备份（package.json / pnpm-lock / node_modules/<pkg>）。
+3. 调用 uninstall 的**内部步骤**（不删 bundles、不单独回滚）。
+4. 用 `runUpdate({ profile, entry, target: { version, installSpec, installKind }, ... })` 安装同版本；
+   `installSpec` 由调用方（index.js）用当前源解析后传入，缺省 `${name}@${version}`。
+5. 安装失败 → 用第 2 步的整体备份恢复（deps、lock、node_modules），`rolledBack: true`、`error.code='reinstall-failed'`。
+6. 成功 → `toVersion === version`、`needsRestart: true`。
+
+### 7.3 index.js 集成
+
+- 队列：`op.kind` 新增 `'uninstall' | 'reinstall'`，与 update 共用同一条串行队列（同一时刻只有一个操作）。
+- 路由：
+  - `POST /plugin-updater/api/uninstall` `{ name }` → `{ operationId }`
+  - `POST /plugin-updater/api/reinstall` `{ name, version? }` → `{ operationId }`
+  - 同步校验与 `/update` 相同（包名正则、entry 存在、kind），违规直接 400。
+- `runOneUninstall` / `runOneReinstall`：操作成功后删除 `cache.packages[name]`、`invalidateDiagnostics()`、
+  设置 `pendingRestart.set(name, { action, toVersion })`；失败写 `lastUpdate`（`ok:false`，含 detail）。
+- `rows[]` 新增字段：
+  - `loadFailure`: `null | { code, title, summary, detail?, at, fixes }` —— 从已缓存的 `diagnostics.items`
+    里按 `plugin === row.name` 且 `severity === 'error'` 取第一条；未跑过诊断时为 `null`。
+  - `selfPlugin`: `boolean` —— 该行是否就是本插件。
+- `capabilities` 不变。
+
+### 7.4 client 规格
+
+- 操作列最右增加 `⋯` 菜单按钮（`aria-haspopup="menu"`）：菜单两项「重新安装」「卸载」；
+  当前行有进行中操作、`builtin`、`local`、`selfPlugin === true` 时按钮禁用（title 说明原因）。
+- 点「卸载」→ 确认弹窗（标题「卸载插件」，正文含包名与版本、说明会从 profile 与 bundles 移除、需重启生效）；
+  确认后 POST `/uninstall`。
+- 点「重新安装」→ 直接 POST `/reinstall`（同一行变为「重新安装中…」，完成后「需重启生效 / 重启 DSH」）。
+- 加载失败标记：`row.loadFailure !== null` 时，在插件名右侧显示红色小徽标「加载失败」（`role="button"`），
+  点击打开启动诊断弹窗并**只显示该插件**的条目；`loadFailure` 为空不占位、不抖动。
+- 文案 zh/en 都要加：`moreActions`、`reinstall`、`uninstall`、`uninstallConfirmTitle`、`uninstallConfirmBody`、
+  `uninstallConfirmAction`、`reinstalling`、`uninstalling`、`loadFailedBadge`。
+
+### 7.5 测试要求
+
+- `test/remove.test.js`：uninstall 成功（deps/bundles/node_modules 三处都变）、builtin/local/self 拒绝、
+  FAKE_PM fail 时字节级回滚；reinstall 成功（version 精确、bundles 保留）、安装失败时整体回滚。
+- `test/state.test.js`：给假 diagnostics 缓存时 `rows[].loadFailure` 过滤正确（只取 error + 同插件）。
+- client harness：徽标渲染、点徽标打开过滤后的弹窗、`⋯` 菜单项、卸载确认、两个 POST 的请求体。
