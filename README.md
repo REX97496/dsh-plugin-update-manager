@@ -23,6 +23,8 @@ DSH 的插件有 `engines.dsh` / `@deepseek-ai/dsh*` peer 版本闸，直接 `pn
 > - `docs/screenshots/diag-dialog.png` — 诊断分析弹窗：每个异常的插件、错误码、原因、可复制修复命令 — 同样的表格也注册在「设置 → 内置插件 → 插件更新」tab
 > - `docs/screenshots/diag-toast-rich.png` — 重启后的右下角启动诊断浮窗：异常插件名 + 错误码 + 发现时间，点任意一条直接定位
 > - `docs/screenshots/diag-dialog-rich.png` — 从浮窗点进来后的诊断弹窗：汇总行（条目数/扫描文件数/检查时刻）、严重级别、绝对+相对时间、日志预览
+> - `docs/screenshots/row-checking.png` — 检查进行中：行首旋转指示器、状态列「正在检查」、整行扫光
+> - `docs/screenshots/light-theme.png` — 浅色主题下的更新源下拉：背景与文字都跟随主题，不再白底白字
 > - `docs/screenshots/manage-rows.png` — 每行右侧「⋯」菜单入口 + 加载失败红色徽标
 > - `docs/screenshots/manage-menu.png` — 「⋯」菜单展开：重新安装 / 卸载
 > - `docs/screenshots/manage-uninstall-confirm.png` — 卸载确认弹窗（删 dependencies 与 bundles、需重启）
@@ -314,6 +316,7 @@ dsh-plugin-update-manager update dshmarket@1.73.15
 
 插件加载失败时，DSH 往往只把原因写进日志，界面上表现成「插件没生效」。本插件会读本地启动日志，把失败归因到具体插件，并给出可执行的下一步：
 
+- 正在检查的插件：行首有旋转指示器，状态列显示「正在检查」，整行有一道缓慢扫过的光带（`prefers-reduced-motion` 下自动关闭）。
 - 打开设置页时，若有异常，顶部显示「启动诊断：N 个插件加载异常」，点「查看分析」看条目，点「重新诊断」强制重扫。
 - 重启后右下角会弹出一张诊断浮窗：标题是去重后的异常插件数，下面最多列 3 条「插件名 + 错误码 + 发现时间」，点任意一条直接打开只看这个插件的诊断详情；超出显示「还有 N 条异常」，底部「查看全部 N 项分析」打开完整列表。
 - 命中的插件在列表里带**红色徽标**（「加载失败」），悬停可看一句话摘要，点徽标会打开诊断详情并定位到该插件；徽标只认 `error` 级条目，只有 `warn` 的插件不会被打红。
