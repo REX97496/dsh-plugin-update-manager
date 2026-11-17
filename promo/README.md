@@ -156,3 +156,17 @@ python3 "$DSH_SKILLS/onetake/scripts/verify_promo.py" out/final4-high.mp4 --comp
 - 18–19s：标题出现时右下角弹出「插件更新 · 3 个插件有兼容更新」卡片（bili-scroll / billion-context / dsh-better-sidebar），20.5s 随对话框入场淡出。
 - 音量：`sfx5.wav` 把 59.8–70.4 的原则/尾句音效 +4/+2 dB；`bed5.wav` 取消该段的 duck（只在 0–1.7 / 9–15 / 43.2–48.4 / 53.2–60.4 压低，ramp 0.5s），结尾不再忽大忽小。
 - 产物：`out/dsh-plugin-update-manager-promo-v6-4k60.mp4`（3840×2160 · 60fps · 11.4 Mbps · 116.9 MB · 82s），`verify_promo.py` PASS（quiet 0.195，continuity 0.90，curves 172px@60）。
+
+# v7（4K60 · 片头卡片爆散入场 · 音乐全程不降音量）
+
+- 片头：卡片不再一开始就摆在墙上；`T.chip0` 前 0.58s 开始，45 张卡片从画面中心附近按「行 0.085s / 列 0.041s」的斜向波次**爆散飞入**各自的位置（起始 scale 0.22、blur 14px、±9° 旋转，`OM.spring(0.90, 11)` 落地），最后一行落定后插件墙才开始横向滚动（与原 v6 相同的 5 行 × 9 列、同相位无缝循环）。
+- 开场句「插件，越装越多。」与卡片飞入交叠，不再出现空档；滚动的相位从入场结束时起算，所以卡片落位后是「静止一瞬 → 开始滑动」。
+- 音乐：`make_bed6.py` 生成 `music/bed6.wav`，**全程恒定电平**，不再有 duck 窗口（v5/v6 曾在 0–1.7 / 9–15 / 43.2–48.4 / 53.2–60.4 压低），只在开头 0.45s 淡入、结尾 0.8s 淡出防爆音。
+- 混音与成片：`mix7.py`（sfx + bed6，`MUS_GAIN=0.8`，两遍 loudnorm 线性增益到 −16 LUFS）→ `encode7.py`（CRF 8 / medium / 4K60）→ `out/dsh-plugin-update-manager-promo-v7-4k60.mp4`（3840×2160 · 60fps · 120.7 MB · 82s）。
+- `verify_promo.py`：rest / burst / not-flat / continuity(0.90) / curves 全 PASS，唯一 FAIL 是 `audio quiet 0.03`（该检查要求 ≥15% 的秒级窗口接近静音）——与「任何情况下都不让声音变小」直接冲突，属于按需求刻意保留的偏离，不是缺陷。
+
+# 封面（cover/）
+
+- `cover/cover.html` + `cover/look.js`（`look.py apply dusk` 生成，字体子集内联）：同一份 DOM 里用 `#h` / `#v` 两套版面，`window.__layout('h'|'v')` 切换。
+- 渲染：`PYTHONUTF8=1 python3 cover/shot_cover.py cover/cover.html out/covers` → 1920×1080 与 1080×1920 两张 PNG（JPG 由 ffmpeg -q:v 2 转出）。
+- 视觉沿用 v7：dusk 深紫底 + 等宽卡片 + 紫色主色 / 金色辅助；横版左侧标题 + 右侧「已安装 0.20.0 → 0.26.1」主卡与四档源；竖版上标题、中主卡、下四档源与三条原则。

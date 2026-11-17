@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>插件更新管理器 · 封面</title>
+<style>
+html,body{margin:0;background:#08070b;color:#efece6;overflow:hidden}
+body{font-family:var(--text);-webkit-font-smoothing:antialiased}
+
+.frame{position:relative;overflow:hidden;background:
+  radial-gradient(120% 90% at 50% -12%, #241f33 0%, #15131c 54%, #08070b 100%)}
+.frame::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(78% 62% at 50% 46%, transparent 52%, rgba(0,0,0,.55) 100%)}
+
+.eyebrow{font-family:var(--mono);font-size:19px;letter-spacing:.24em;color:#807c8c;text-transform:uppercase}
+.title{font-family:var(--display);font-weight:var(--display-weight);letter-spacing:-.03em;line-height:1.05;margin:0}
+.sub{color:#b7b2c2;line-height:1.52;margin:0}
+.mono{font-family:var(--mono)}
+
+.chip{position:absolute;box-sizing:border-box;border:1px solid rgba(96,92,112,.8);border-radius:14px;
+  background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.015));
+  padding:14px 16px 0 34px;overflow:hidden}
+.chip .dot{position:absolute;left:15px;top:19px;width:8px;height:8px;border-radius:2px;background:#6d6981}
+.chip .nm{font-family:var(--mono);font-size:17px;color:#efece6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip .vv{position:absolute;left:34px;bottom:10px;font-family:var(--mono);font-size:13px;color:#807c8c}
+
+.cardBig{position:absolute;box-sizing:border-box;border:1px solid rgba(150,132,255,.6);border-radius:20px;
+  background:linear-gradient(180deg,rgba(124,108,255,.11),rgba(255,255,255,.02));
+  box-shadow:0 30px 80px rgba(0,0,0,.5)}
+.cardBig .who{font-family:var(--mono);font-size:20px;color:#9a95ab}
+.cardBig .nm2{font-family:var(--mono);color:#efece6}
+.cardBig .vers{font-family:var(--mono);display:flex;align-items:baseline;gap:16px}
+.cardBig .vers .old{color:#6f6b7e;text-decoration:line-through;text-decoration-color:rgba(244,198,79,.9)}
+.cardBig .vers .new{color:#8b7bff}
+.cardBig .row{display:flex;align-items:center;gap:14px}
+
+.pill{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-size:17px;color:#cfcbdb;
+  border:1px solid rgba(96,92,112,.7);border-radius:999px;padding:9px 17px;background:rgba(255,255,255,.02)}
+.pill .pd{width:7px;height:7px;border-radius:50%;background:#7c6cff}
+
+.tag{display:inline-block;font-size:15px;line-height:1.2;padding:5px 10px;border-radius:7px;font-weight:500}
+.tag.ok{color:#cdc5ff;background:rgba(124,108,255,.16);border:1px solid rgba(124,108,255,.38)}
+
+.btn{display:inline-flex;align-items:center;gap:8px;font-size:15px;font-weight:500;color:#efece6;
+  border:1px solid rgba(150,140,190,.5);background:rgba(255,255,255,.05);border-radius:9px;padding:8px 13px;white-space:nowrap}
+.arrow{font-family:var(--mono);color:#f4c64f}
+.st{font-size:15px;color:#8f8a9f;white-space:nowrap}
+
+.rule{height:1px;background:linear-gradient(90deg,rgba(150,140,190,.4),rgba(150,140,190,0))}
+.foot{font-family:var(--mono);font-size:16px;color:#7b778a;letter-spacing:.02em}
+
+/* ---------- horizontal 1920 x 1080 ---------- */
+#h{width:1920px;height:1080px;display:none}
+#h .left{position:absolute;left:132px;top:236px;width:900px}
+#h .eyebrow{margin-bottom:32px}
+#h .title{font-size:110px}
+#h .sub{font-size:33px;margin-top:32px;max-width:840px}
+#h .rule{position:absolute;left:132px;top:626px;width:800px}
+#h .feats{position:absolute;left:132px;top:686px;display:flex;gap:12px}
+#h .bottom{position:absolute;left:134px;bottom:92px;display:flex;align-items:center;gap:22px}
+#h .stack{position:absolute;right:92px;top:120px;width:740px;height:860px}
+#h .floatA{left:16px;top:6px;width:470px;height:90px}
+#h .floatB{left:150px;top:112px;width:400px;height:88px}
+#h .cardBig{left:0;top:236px;width:704px;height:262px;padding:26px 28px}
+#h .cardBig .nm2{font-size:32px;margin-top:6px}
+#h .cardBig .vers{font-size:44px;margin-top:12px}
+#h .cardBig .vers .old{text-decoration-thickness:3px}
+#h .cardBig .row{margin-top:16px}
+#h .floatC{left:10px;top:548px;width:490px;height:88px}
+#h .floatD{left:196px;top:660px;width:390px;height:86px}
+#h .floatA,#h .floatB{opacity:.4}
+#h .floatC,#h .floatD{opacity:.26}
+#h .srcRow{position:absolute;left:1018px;top:902px;display:flex;gap:10px}
+#h .srcRow .pill{font-size:15px;padding:7px 13px}
+
+/* ---------- vertical 1080 x 1920 ---------- */
+#v{width:1080px;height:1920px;display:none}
+#v .top{position:absolute;left:88px;top:168px;width:920px}
+#v .eyebrow{margin-bottom:36px}
+#v .title{font-size:124px;line-height:1.12}
+#v .sub{font-size:37px;margin-top:34px;max-width:900px}
+#v .rule{position:absolute;left:90px;top:742px;width:800px}
+#v .stack{position:absolute;left:88px;top:790px;width:920px;height:540px}
+#v .floatA{left:28px;top:0;width:520px;height:92px;opacity:.34}
+#v .floatB{left:300px;top:104px;width:470px;height:90px;opacity:.2}
+#v .cardBig{left:0;top:222px;width:880px;height:282px;padding:28px 30px}
+#v .cardBig .nm2{font-size:38px;margin-top:8px}
+#v .cardBig .vers{font-size:52px;margin-top:14px}
+#v .cardBig .vers .old{text-decoration-thickness:4px}
+#v .cardBig .row{margin-top:18px}
+#v .srcs{position:absolute;left:90px;top:1382px;display:flex;flex-wrap:wrap;gap:11px;width:900px}
+#v .srcs .pill{font-size:17px;padding:10px 16px}
+#v .prin{position:absolute;left:90px;top:1508px;width:920px}
+#v .prin .line{display:flex;align-items:baseline;gap:14px;font-size:35px;margin-bottom:24px}
+#v .prin .n{font-family:var(--mono);font-size:18px;color:#6f6b7e;width:30px;flex:none}
+#v .prin .a{color:#efece6}
+#v .prin .b{color:#8f8a9f}
+#v .bottom{position:absolute;left:90px;bottom:92px;display:flex;flex-direction:column;gap:12px}
+/* ---------- 4:3 1440 x 1080 ---------- */
+#r{width:1440px;height:1080px;display:none}
+#r .left{position:absolute;left:104px;top:252px;width:660px}
+#r .eyebrow{font-size:16px;margin-bottom:24px}
+#r .title{font-size:82px}
+#r .sub{font-size:26px;margin-top:24px;max-width:640px}
+#r .rule{position:absolute;left:104px;top:622px;width:600px}
+#r .feats{position:absolute;left:104px;top:668px;display:flex;gap:9px}
+#r .feats .pill{font-size:14px;padding:7px 12px}
+#r .bottom{position:absolute;left:106px;bottom:62px;display:flex;align-items:center;gap:14px}
+#r .bottom .foot{font-size:14px}
+#r .stack{position:absolute;right:62px;top:160px;width:600px;height:640px}
+#r .floatA{left:10px;top:0;width:380px;height:76px;opacity:.4}
+#r .floatB{left:120px;top:88px;width:330px;height:74px;opacity:.3}
+#r .cardBig{left:0;top:184px;width:576px;height:226px;padding:22px 24px}
+#r .cardBig .who{font-size:16px}
+#r .cardBig .nm2{font-size:26px;margin-top:4px}
+#r .cardBig .vers{font-size:36px;margin-top:10px}
+#r .cardBig .row{margin-top:12px;gap:10px}
+#r .cardBig .tag{font-size:13px;padding:4px 8px}
+#r .cardBig .btn{font-size:13px;padding:6px 10px}
+#r .cardBig .st{font-size:13px}
+#r .floatC{left:8px;top:442px;width:400px;height:74px;opacity:.26}
+#r .floatD{left:150px;top:530px;width:330px;height:72px;opacity:.2}
+#r .srcRow{position:absolute;right:62px;top:892px;display:flex;gap:8px;justify-content:flex-end;width:auto}
+#r .srcRow .pill{font-size:13px;padding:6px 11px}
+
+/* ---------- 3:4 1080 x 1440 ---------- */
+#t{width:1080px;height:1440px;display:none}
+#t .top{position:absolute;left:64px;top:100px;width:950px}
+#t .eyebrow{font-size:16px;margin-bottom:22px}
+#t .title{font-size:94px;line-height:1.1}
+#t .sub{font-size:26px;margin-top:24px;max-width:920px}
+#t .rule{position:absolute;left:66px;top:566px;width:790px}
+#t .stack{position:absolute;left:64px;top:596px;width:920px;height:440px}
+#t .floatA{left:20px;top:0;width:420px;height:74px;opacity:.32}
+#t .floatB{left:250px;top:84px;width:380px;height:72px;opacity:.2}
+#t .cardBig{left:0;top:176px;width:730px;height:246px;padding:22px 24px}
+#t .cardBig .who{font-size:16px}
+#t .cardBig .nm2{font-size:30px;margin-top:4px}
+#t .cardBig .vers{font-size:42px;margin-top:10px}
+#t .cardBig .row{margin-top:14px;gap:10px}
+#t .cardBig .tag{font-size:13px;padding:4px 8px}
+#t .cardBig .btn{font-size:13px;padding:6px 10px}
+#t .srcs{position:absolute;left:66px;top:1040px;display:flex;flex-wrap:wrap;gap:8px;width:920px}
+#t .srcs .pill{font-size:14px;padding:8px 13px}
+#t .prin{position:absolute;left:66px;top:1146px;width:930px}
+#t .prin .line{display:flex;align-items:baseline;gap:14px;font-size:26px;line-height:1.35;margin-bottom:16px}
+#t .prin .n{font-family:var(--mono);font-size:15px;color:#6f6b7e;width:26px;flex:none}
+#t .prin .a{color:#efece6}
+#t .prin .b{color:#8f8a9f}
+#t .prin .n{font-size:15px;width:26px}
+#t .bottom{position:absolute;left:66px;bottom:54px;display:flex;flex-direction:column;gap:8px}
+#t .bottom .foot{font-size:13px}
+</style>
+<script src="look.js"></script>
+</head>
+<body>
+
+<!-- ============ horizontal ============ -->
+<div id="h" class="frame">
+  <div class="left">
+    <div class="eyebrow">DSH · PLUGIN UPDATE MANAGER</div>
+    <h1 class="title">插件更新管理器</h1>
+    <p class="sub">看清每个插件装的是哪个版本，<br>并把它安全地更新到与本机 DSH 兼容的那个版本。</p>
+  </div>
+  <div class="rule"></div>
+  <div class="feats">
+    <span class="pill"><span class="pd"></span>兼容版优先</span>
+    <span class="pill"><span class="pd"></span>四档更新源</span>
+    <span class="pill"><span class="pd"></span>失败即回滚</span>
+  </div>
+  <div class="bottom">
+    <span class="foot">npm i dsh-plugin-update-manager</span>
+    <span class="foot" style="color:#5f5b6d">·</span>
+    <span class="foot">github.com/REX97496/dsh-plugin-update-manager</span>
+  </div>
+
+  <div class="stack">
+    <div class="chip floatA"><span class="dot"></span><div class="nm">@xmanrui/dsh-im</div><div class="vv">5.10.0</div></div>
+    <div class="chip floatB"><span class="dot"></span><div class="nm">dsh-bili-scroll</div><div class="vv">2.5.0</div></div>
+    <div class="cardBig">
+      <div class="who">已安装</div>
+      <div class="nm2">dsh-better-sidebar</div>
+      <div class="vers"><span class="old">0.20.0</span><span class="arrow">→</span><span class="new">0.26.1</span></div>
+      <div class="row"><span class="tag ok">有兼容更新</span><span class="btn">更新到兼容版 0.26.1</span><span class="st">需重启生效</span></div>
+    </div>
+    <div class="chip floatC"><span class="dot"></span><div class="nm">dshmarket</div><div class="vv">1.73.6</div></div>
+    <div class="chip floatD"><span class="dot"></span><div class="nm">billion-context</div><div class="vv">0.1.213</div></div>
+  </div>
+  <div class="srcRow">
+    <span class="pill"><span class="pd"></span>npm 官方</span>
+    <span class="pill"><span class="pd"></span>npm 国内镜像</span>
+    <span class="pill"><span class="pd"></span>GitHub</span>
+    <span class="pill"><span class="pd"></span>GitHub 镜像</span>
+  </div>
+</div>
+
+<!-- ============ vertical ============ -->
+<div id="v" class="frame">
+  <div class="top">
+    <div class="eyebrow">DSH · 插件更新管理器</div>
+    <h1 class="title">插件更新<br>管理器</h1>
+    <p class="sub">看清版本，<br>安全地更新到与本机 DSH<br>兼容的那一个。</p>
+  </div>
+  <div class="rule"></div>
+
+  <div class="stack">
+    <div class="chip floatA"><span class="dot"></span><div class="nm">@xmanrui/dsh-im</div><div class="vv">5.10.0</div></div>
+    <div class="chip floatB"><span class="dot"></span><div class="nm">dshmarket</div><div class="vv">1.73.6</div></div>
+    <div class="cardBig">
+      <div class="who">已安装</div>
+      <div class="nm2">dsh-better-sidebar</div>
+      <div class="vers"><span class="old">0.20.0</span><span class="arrow">→</span><span class="new">0.26.1</span></div>
+      <div class="row"><span class="tag ok">有兼容更新</span><span class="btn">更新到兼容版 0.26.1</span></div>
+    </div>
+  </div>
+
+  <div class="srcs">
+    <span class="pill"><span class="pd"></span>npm 官方</span>
+    <span class="pill"><span class="pd"></span>npm 国内镜像</span>
+    <span class="pill"><span class="pd"></span>GitHub 发布</span>
+    <span class="pill"><span class="pd"></span>GitHub 国内镜像</span>
+  </div>
+
+  <div class="prin">
+    <div class="line"><span class="n">01</span><span class="a">不自动更新</span><span class="b">每一次都要你点头</span></div>
+    <div class="line"><span class="n">02</span><span class="a">不改插件内部</span><span class="b">只动安装清单和依赖</span></div>
+    <div class="line"><span class="n">03</span><span class="a">不上传任何东西</span><span class="b">状态只在本机</span></div>
+  </div>
+
+  <div class="bottom">
+    <span class="foot">npm i dsh-plugin-update-manager</span>
+    <span class="foot" style="color:#5f5b6d">github.com/REX97496/dsh-plugin-update-manager</span>
+  </div>
+</div>
+
+<script>
+(function () {
+  function layout(name) {
+    document.getElementById('h').style.display = name === 'h' ? 'block' : 'none';
+    document.getElementById('v').style.display = name === 'v' ? 'block' : 'none';
+    document.body.style.width = name === 'h' ? '1920px' : '1080px';
+    document.body.style.height = name === 'h' ? '1080px' : '1920px';
+  }
+  var built = { h: true, v: true };
+  function build(name) {
+    if (built[name]) return;
+    var dst = document.getElementById(name === 'r' ? 'h' : 'v').cloneNode(true);
+    dst.id = name;
+    dst.style.display = 'none';
+    document.body.appendChild(dst);
+    built[name] = true;
+  }
+  var sizes = { h: [1920, 1080], v: [1080, 1920], r: [1440, 1080], t: [1080, 1440] };
+  window.__layout = function (next) {
+    build(next);
+    ['h', 'v', 'r', 't'].forEach(function (k) {
+      var el = document.getElementById(k);
+      if (el) el.style.display = k === next ? 'block' : 'none';
+    });
+    document.body.style.width = sizes[next][0] + 'px';
+    document.body.style.height = sizes[next][1] + 'px';
+  };
+  var start = (location.hash || '').replace('#', '');
+  window.__layout(sizes[start] ? start : 'h');
+  window.__ready = (window.LOOK && window.LOOK.ready) ? window.LOOK.ready.then(function () { return true }) : Promise.resolve(true);
+})();
+</script>
+</body>
+</html>

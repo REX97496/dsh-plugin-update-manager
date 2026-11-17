@@ -507,8 +507,10 @@ function seek(t){
   /* 2 · chips: five rows sliding sideways like a wall of installed
         plugins, then the split — loaded ones shrink into the four
         corners, the three rejected ones grow into the middle. */
-  var seen = clamp((t - T.chip0) / 0.85, 0, 1);
-  var scroll = Math.max(0, t - (T.chip0 + 0.55));
+  /* the deck is not there yet: it bursts out of the centre into the wall,
+     and only once the last card has landed does the wall start sliding. */
+  var ENT = T.chip0 - 0.58, ENT_SPAN = 1.02;
+  var scroll = Math.max(0, t - (ENT + ENT_SPAN));
   var fly = smoother(seg(t, Q(8.0), Q(8.75)));
   var badK = OM.spring(t - 8.25, 0.62, 16);
   var corners = [[86,116],[1700,116],[86,880],[1700,880]];
@@ -518,27 +520,38 @@ function seek(t){
     var off = scroll * ROWSPEED;
     var x = ((c.col * ROWSTEP + CLEFT - off) % ROWW + ROWW) % ROWW - CW;
     var y = CTOP + c.row * (CH + CGAPY);
-    var appear = clamp((t - (T.chip0 + 0.03 + i*0.02)) / 0.5, 0, 1);
-    var op = seen * appear;
+    var stag = c.row * 0.085 + c.col * 0.041;
+    var k = OM.spring(t - (ENT + stag), 0.90, 11);
+    var kn = clamp(k, 0, 1);
+    var originX = 960 - CW/2 + (c.col - 4) * 16;
+    var originY = 540 - CH/2 + (c.row - 2) * 11;
+    var ex = originX + (x - originX) * k;
+    var ey = originY + (y - originY) * k;
+    var esc = 0.22 + 0.78 * kn;
+    var eop = clamp(k * 1.9, 0, 1);
+    var eblur = (1 - kn) * 14;
+    var erot = (1 - kn) * 9 * (c.col % 2 ? 1 : -1);
     var tx = 0, ty = 0, sc = 1, blur = 0;
+    var op = eop;
     if (c.bad){
       var centre = SLOTX[CHIPS[i][0]] - CW/2;
       tx = (centre - x) * badK; ty = (372 - y) * badK;
       sc = 1 + 0.62*badK;
       sc *= 1 + 0.012*beat*badK;
+      op = eop;
     } else {
       var cn = corners[i % 4];
       tx = (cn[0] - x) * fly; ty = (cn[1] - y) * fly;
       sc = 1 - 0.72*fly;
-      op = seen * (1 - clamp(fly*1.5, 0, 1));
+      op = eop * (1 - clamp(fly*1.5, 0, 1));
       blur = fly*3;
     }
     var tail = c.bad ? (1 - smoother(seg(t, Q(14.4), Q(15.0)))) : (1 - smoother(seg(t, T.chip1-0.25, T.chip1+0.1)));
     c.el.style.opacity = op * tail;
-    c.el.style.transform = 'translate(' + (x + tx) + 'px,' + (y + ty) + 'px) scale(' + sc + ')';
-    c.el.style.filter = 'blur(' + blur + 'px)';
+    c.el.style.transform = 'translate(' + (ex + tx) + 'px,' + (ey + ty) + 'px) rotate(' + erot + 'deg) scale(' + (esc * sc) + ')';
+    c.el.style.filter = 'blur(' + (eblur + blur) + 'px)';
   }
-  $('chipFade').style.opacity = seen * (1 - fly);
+  $('chipFade').style.opacity = smoother(seg(t, ENT + 0.85, ENT + 1.45)) * (1 - fly);
 
   /* 3 · gate */
   var gl = env(t, T.log0, T.log1, 0.4, 0.5);
